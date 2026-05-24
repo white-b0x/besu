@@ -16,21 +16,73 @@ package org.hyperledger.besu.ethereum.mainnet;
 
 import org.hyperledger.besu.ethereum.mainnet.feemarket.BaseFeeMarket;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * Gas limit calculator for ETC Olympia hard fork. Extends the London EIP-1559 elastic block gas
- * limit calculator with a per-transaction gas cap of 2^24 (EIP-7825).
+ * Gas limit calculator for ETC Olympia (ECIP-1121).
  *
- * <p>The transaction gas limit cap is enforced by {@link MainnetTransactionValidator#validate}
- * which checks {@code transaction.getGasLimit() > gasLimitCalculator.transactionGasLimitCap()}.
+ * <p>EIP-7825: enforces a per-transaction gas cap of 2^24 (16,777,216).
+ *
+ * <p>EIP-7935: targets a block gas limit of 60,000,000. Post-Olympia, the gas limit converges from
+ * the pre-fork level (≈ 8M) toward 60M via standard Yellow Paper ±1/1024 adjustment — no operator
+ * flag required. Pre-Olympia blocks are returned unchanged (no early creep toward 60M).
+ *
+ * <p>The London fork-activation 2× doubling (ETH-specific, for gas-target field preservation) is
+ * explicitly suppressed. ETC Olympia is a genuine 7.5× throughput increase converging over ≈ 2,055
+ * blocks, not a field-doubling operation.
  */
 public class OlympiaTargetingGasLimitCalculator extends LondonTargetingGasLimitCalculator {
 
-  /** EIP-7825: Maximum gas limit per transaction (2^24 = 16,777,216). */
+  private static final Logger LOG =
+      LoggerFactory.getLogger(OlympiaTargetingGasLimitCalculator.class);
+
+  /** EIP-7825: per-transaction gas cap (2^24 = 16,777,216). */
   public static final long OLYMPIA_TRANSACTION_GAS_LIMIT_CAP = 16_777_216L;
+
+  /** EIP-7935: block gas limit target — hardcoded, no operator flag required. */
+  public static final long OLYMPIA_GAS_TARGET = 60_000_000L;
+
+  private final long olympiaBlockNumber;
 
   public OlympiaTargetingGasLimitCalculator(
       final long londonForkBlock, final BaseFeeMarket feeMarket) {
     super(londonForkBlock, feeMarket);
+    this.olympiaBlockNumber = londonForkBlock;
+  }
+
+  /**
+   * Compute the next block gas limit.
+   *
+   * <ul>
+   *   <li>Pre-Olympia (≤ activation block): return {@code currentGasLimit} unchanged.
+   *   <li>Post-Olympia: Yellow Paper ±1/1024 convergence toward the hardcoded 60M target.
+   * </ul>
+   *
+   * <p>The {@code targetGasLimit} parameter (miner config) is intentionally ignored post-Olympia;
+   * the protocol target is fixed at {@link #OLYMPIA_GAS_TARGET}.
+   */
+  @Override
+  public long nextGasLimit(
+      final long currentGasLimit, final long targetGasLimit, final long newBlockNumber) {
+    if (newBlockNumber <= olympiaBlockNumber) {
+      return currentGasLimit;
+    }
+
+    final long nextGasLimit;
+    if (currentGasLimit < OLYMPIA_GAS_TARGET) {
+      nextGasLimit = Math.min(safeAddAtMost(currentGasLimit), OLYMPIA_GAS_TARGET);
+    } else if (currentGasLimit > OLYMPIA_GAS_TARGET) {
+      nextGasLimit = Math.max(safeSubAtMost(currentGasLimit), OLYMPIA_GAS_TARGET);
+    } else {
+      nextGasLimit = currentGasLimit;
+    }
+
+    if (nextGasLimit != currentGasLimit) {
+      LOG.debug("Adjusting block gas limit from {} to {}", currentGasLimit, nextGasLimit);
+    }
+
+    return nextGasLimit;
   }
 
   @Override

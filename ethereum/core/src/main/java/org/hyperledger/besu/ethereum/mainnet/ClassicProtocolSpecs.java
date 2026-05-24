@@ -559,8 +559,9 @@ public class ClassicProtocolSpecs {
         .addRule(new AncestryValidationRule())
         .addRule(new GasUsageValidationRule())
         .addRule(
-            new GasLimitRangeAndDeltaValidationRule(
-                5000, Long.MAX_VALUE, Optional.of(baseFeeMarket)))
+            // ETC Olympia does not apply the London 2× gas-limit doubling at fork activation.
+            // Pass Optional.empty() so the validator uses plain parent gasLimit for delta bounds.
+            new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
@@ -583,8 +584,8 @@ public class ClassicProtocolSpecs {
         .addRule(new AncestryValidationRule())
         .addRule(new GasUsageValidationRule())
         .addRule(
-            new GasLimitRangeAndDeltaValidationRule(
-                5000, Long.MAX_VALUE, Optional.of(baseFeeMarket)))
+            // ETC Olympia: same as block validator — plain parent gasLimit, no 2× doubling.
+            new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))

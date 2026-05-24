@@ -39,7 +39,7 @@ public class LondonFeeMarket implements BaseFeeMarket {
   private final TransactionPriceCalculator txPriceCalculator;
   private final Wei baseFeeFloor;
 
-  LondonFeeMarket(final long londonForkBlockNumber, final Optional<Wei> baseFeePerGasOverride) {
+  public LondonFeeMarket(final long londonForkBlockNumber, final Optional<Wei> baseFeePerGasOverride) {
     this(TransactionPriceCalculator.eip1559(), londonForkBlockNumber, baseFeePerGasOverride);
   }
 
@@ -108,7 +108,11 @@ public class LondonFeeMarket implements BaseFeeMarket {
       gasDelta = targetGasUsed - parentBlockGasUsed;
       final long denominator = getBasefeeMaxChangeDenominator();
       feeDelta = parentBaseFee.multiply(gasDelta).divide(targetGasUsed).divide(denominator);
-      baseFee = parentBaseFee.subtract(feeDelta);
+      // Floor feeDelta at 1 wei — matches go-ethereum math.BigMax(feeDelta, big1) and Fukuii
+      // BaseFeeCalculator. Without this, integer truncation at parentBaseFee=1 wei gives
+      // feeDelta=0, making baseFee stuck at 1 indefinitely on empty blocks.
+      feeDelta = UInt256s.max(feeDelta, Wei.ONE);
+      baseFee = parentBaseFee.greaterThan(feeDelta) ? parentBaseFee.subtract(feeDelta) : Wei.ZERO;
     }
     LOG.trace(
         "block #{} parentBaseFee: {} parentGasUsed: {} parentGasTarget: {} baseFee: {}",
