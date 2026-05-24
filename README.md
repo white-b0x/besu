@@ -10,11 +10,20 @@
 
 Besu is an Apache 2.0 licensed, MainNet compatible, Ethereum client written in Java.
 
-## Ethereum Classic Support
+## Ethereum Classic Support (white-b0x / `main` branch)
 
-This branch (`etc`) includes full support for Ethereum Classic (ETC mainnet, chain ID 61) and the Mordor testnet (chain ID 63). All ETC forks through Spiral are implemented with ETChash mining, ECIP-1017 era-based rewards, and ECIP-1100 (MESS) anti-reorg protection.
+The `main` branch adds full support for Ethereum Classic (ETC mainnet, chain ID 61) and the Mordor testnet (chain ID 63). Maintained by [white-b0x](https://github.com/white-b0x) as a reference client for Ethereum Classic.
 
-See [ETC-HANDOFF.md](ETC-HANDOFF.md) for architecture, test coverage, and running instructions.
+### Networks
+
+| Network | Chain ID | Consensus |
+|---------|----------|-----------|
+| Ethereum Classic | 61 | Proof of Work (ETChash) |
+| Mordor Testnet | 63 | Proof of Work (ETChash) |
+
+### Olympia Hard Fork
+
+The `main` branch implements the upcoming Ethereum Classic Olympia upgrade: EIP-1559 base fee mechanics (ECIP-1111), an immutable on-chain Treasury (ECIP-1112), and a suite of EVM modernization EIPs aligned with post-London Ethereum (ECIP-1121).
 
 ## Useful Links
 

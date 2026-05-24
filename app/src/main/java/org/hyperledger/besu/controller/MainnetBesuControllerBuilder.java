@@ -93,15 +93,17 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
   private void setupMessBlockChoiceRule(final Blockchain blockchain) {
     final OptionalLong activationBlock = genesisConfigOptions.getEcbp1100Block();
     final OptionalLong deactivationBlock = genesisConfigOptions.getEcbp1100DeactivateBlock();
+    final OptionalLong reactivationBlock = genesisConfigOptions.getOlympiaBlockNumber();
 
     if (activationBlock.isEmpty()) {
       return;
     }
 
     LOG.info(
-        "ECBP-1100 (MESS) configured: activation={}, deactivation={}",
+        "ECBP-1100 (MESS) configured: activation={}, deactivation={}, reactivation(Olympia)={}",
         activationBlock.getAsLong(),
-        deactivationBlock.isPresent() ? deactivationBlock.getAsLong() : "none");
+        deactivationBlock.isPresent() ? deactivationBlock.getAsLong() : "none",
+        reactivationBlock.isPresent() ? reactivationBlock.getAsLong() : "none");
 
     final Comparator<BlockHeader> baseRule = blockchain.getBlockChoiceRule();
     blockchain.setBlockChoiceRule(
@@ -113,7 +115,7 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
 
           // Check if MESS is active for the current block
           if (!ArtificialFinality.isActive(
-              currentHeader.getNumber(), activationBlock, deactivationBlock)) {
+              currentHeader.getNumber(), activationBlock, deactivationBlock, reactivationBlock)) {
             return baseResult;
           }
 

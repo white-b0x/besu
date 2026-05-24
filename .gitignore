@@ -9,9 +9,11 @@
 .classpath
 # Claude Code internal files (local-only workspace)
 .claude/
+CLAUDE.md
 
 # Local dev workspace (scripts, planning files, notes)
 local/
+.local/
 
 # Secrets & credentials
 .env

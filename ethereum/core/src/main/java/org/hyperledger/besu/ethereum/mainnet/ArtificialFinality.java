@@ -59,6 +59,34 @@ public class ArtificialFinality {
   /**
    * Check if ECBP-1100 (MESS) is active at the given block number.
    *
+   * <p>MESS has a three-phase lifecycle: activated at Thanos-era, deactivated at Spiral-era,
+   * reactivated at Olympia. When {@code reactivationBlock} is present, blocks past {@code
+   * deactivationBlock} that are at or beyond {@code reactivationBlock} are active again.
+   *
+   * @param blockNumber the current block number
+   * @param activationBlock the activation block (empty if not configured)
+   * @param deactivationBlock the deactivation block (empty if not configured)
+   * @param reactivationBlock the Olympia reactivation block (empty if not yet scheduled)
+   * @return true if MESS is active
+   */
+  public static boolean isActive(
+      final long blockNumber,
+      final OptionalLong activationBlock,
+      final OptionalLong deactivationBlock,
+      final OptionalLong reactivationBlock) {
+    if (activationBlock.isEmpty() || blockNumber < activationBlock.getAsLong()) {
+      return false;
+    }
+    if (deactivationBlock.isEmpty() || blockNumber < deactivationBlock.getAsLong()) {
+      return true;
+    }
+    // Past deactivation: reactivates at Olympia
+    return reactivationBlock.isPresent() && blockNumber >= reactivationBlock.getAsLong();
+  }
+
+  /**
+   * Check if ECBP-1100 (MESS) is active at the given block number (two-phase overload).
+   *
    * @param blockNumber the current block number
    * @param activationBlock the activation block (empty if not configured)
    * @param deactivationBlock the deactivation block (empty if not configured)
@@ -68,10 +96,7 @@ public class ArtificialFinality {
       final long blockNumber,
       final OptionalLong activationBlock,
       final OptionalLong deactivationBlock) {
-    if (activationBlock.isEmpty() || blockNumber < activationBlock.getAsLong()) {
-      return false;
-    }
-    return deactivationBlock.isEmpty() || blockNumber < deactivationBlock.getAsLong();
+    return isActive(blockNumber, activationBlock, deactivationBlock, OptionalLong.empty());
   }
 
   /**

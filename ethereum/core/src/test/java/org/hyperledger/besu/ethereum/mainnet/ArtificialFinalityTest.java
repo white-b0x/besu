@@ -29,12 +29,16 @@ public class ArtificialFinalityTest {
   // Activation/deactivation blocks matching ETC mainnet
   private static final OptionalLong MAINNET_ACTIVATION = OptionalLong.of(11_380_000L);
   private static final OptionalLong MAINNET_DEACTIVATION = OptionalLong.of(19_250_000L);
+  private static final OptionalLong MAINNET_REACTIVATION =
+      OptionalLong.of(1_000_000_000_000_000_000L);
 
   // Activation/deactivation blocks matching Mordor
   private static final OptionalLong MORDOR_ACTIVATION = OptionalLong.of(2_380_000L);
   private static final OptionalLong MORDOR_DEACTIVATION = OptionalLong.of(10_400_000L);
+  private static final OptionalLong MORDOR_REACTIVATION =
+      OptionalLong.of(1_000_000_000_000_000_000L);
 
-  // --- isActive tests ---
+  // --- isActive tests (3-arg overload delegates to 4-arg) ---
 
   @Test
   public void isActiveReturnsFalseWhenNotConfigured() {
@@ -84,6 +88,89 @@ public class ArtificialFinalityTest {
         .isTrue();
     assertThat(ArtificialFinality.isActive(10_400_000L, MORDOR_ACTIVATION, MORDOR_DEACTIVATION))
         .isFalse();
+  }
+
+  // --- isActive reactivation tests (4-arg overload) ---
+
+  @Test
+  public void isActiveOnMainnetWithReactivation() {
+    // Full lifecycle on mainnet: activate=11,380,000 deactivate=19,250,000 reactivate=olympia
+    assertThat(
+            ArtificialFinality.isActive(
+                11_380_000L, MAINNET_ACTIVATION, MAINNET_DEACTIVATION, MAINNET_REACTIVATION))
+        .isTrue();
+    assertThat(
+            ArtificialFinality.isActive(
+                19_250_000L, MAINNET_ACTIVATION, MAINNET_DEACTIVATION, MAINNET_REACTIVATION))
+        .isFalse();
+    assertThat(
+            ArtificialFinality.isActive(
+                25_000_000L, MAINNET_ACTIVATION, MAINNET_DEACTIVATION, MAINNET_REACTIVATION))
+        .isFalse();
+    assertThat(
+            ArtificialFinality.isActive(
+                1_000_000_000_000_000_000L,
+                MAINNET_ACTIVATION,
+                MAINNET_DEACTIVATION,
+                MAINNET_REACTIVATION))
+        .isTrue();
+  }
+
+  @Test
+  public void isActiveReturnsFalseInGapBetweenDeactivationAndReactivation() {
+    // block=250, deactivate=200, reactivate=300 → false (in gap)
+    assertThat(
+            ArtificialFinality.isActive(
+                250L, OptionalLong.of(100L), OptionalLong.of(200L), OptionalLong.of(300L)))
+        .isFalse();
+  }
+
+  @Test
+  public void isActiveReturnsTrueAtReactivationBlock() {
+    assertThat(
+            ArtificialFinality.isActive(
+                300L, OptionalLong.of(100L), OptionalLong.of(200L), OptionalLong.of(300L)))
+        .isTrue();
+  }
+
+  @Test
+  public void isActiveReturnsTrueAfterReactivation() {
+    assertThat(
+            ArtificialFinality.isActive(
+                500L, OptionalLong.of(100L), OptionalLong.of(200L), OptionalLong.of(300L)))
+        .isTrue();
+  }
+
+  @Test
+  public void isActiveWithNoReactivationStaysDeactivated() {
+    assertThat(
+            ArtificialFinality.isActive(
+                500L, OptionalLong.of(100L), OptionalLong.of(200L), OptionalLong.empty()))
+        .isFalse();
+  }
+
+  @Test
+  public void isActiveOnMordorWithReactivation() {
+    // Full lifecycle on Mordor: activate=2,380,000 deactivate=10,400,000 reactivate=olympia
+    assertThat(
+            ArtificialFinality.isActive(
+                2_380_000L, MORDOR_ACTIVATION, MORDOR_DEACTIVATION, MORDOR_REACTIVATION))
+        .isTrue();
+    assertThat(
+            ArtificialFinality.isActive(
+                10_400_000L, MORDOR_ACTIVATION, MORDOR_DEACTIVATION, MORDOR_REACTIVATION))
+        .isFalse();
+    assertThat(
+            ArtificialFinality.isActive(
+                15_000_000L, MORDOR_ACTIVATION, MORDOR_DEACTIVATION, MORDOR_REACTIVATION))
+        .isFalse();
+    assertThat(
+            ArtificialFinality.isActive(
+                1_000_000_000_000_000_000L,
+                MORDOR_ACTIVATION,
+                MORDOR_DEACTIVATION,
+                MORDOR_REACTIVATION))
+        .isTrue();
   }
 
   // --- polynomialV tests ---
