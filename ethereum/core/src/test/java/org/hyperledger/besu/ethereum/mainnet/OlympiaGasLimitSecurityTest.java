@@ -17,10 +17,12 @@ package org.hyperledger.besu.ethereum.mainnet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MAX_GAS_LIMIT;
 import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MIN_GAS_LIMIT;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.OLYMPIA_BLOCK;
 
 import org.hyperledger.besu.config.NetworkDefinition;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
+import org.hyperledger.besu.ethereum.mainnet.feemarket.LondonFeeMarket;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.GasLimitRangeAndDeltaValidationRule;
 
 import java.util.Optional;
@@ -44,6 +46,8 @@ public class OlympiaGasLimitSecurityTest {
   private static final long PRE_OLYMPIA_GAS_LIMIT = 8_000_000L;
   private static final long ADJUSTMENT_FACTOR = 1024L;
 
+  // ===== Network definitions =====
+
   @Test
   public void classicNetworkTargetIs60M() {
     assertThat(NetworkDefinition.CLASSIC.getTargetGasLimit()).isEqualTo(OLYMPIA_GAS_TARGET);
@@ -60,11 +64,86 @@ public class OlympiaGasLimitSecurityTest {
         .isEqualTo(16_777_216L);
   }
 
+  // ===== OlympiaTargetingGasLimitCalculator — correct producer behaviour =====
+
+  private OlympiaTargetingGasLimitCalculator olympiaCalc() {
+    final LondonFeeMarket feeMarket =
+        new LondonFeeMarket(OLYMPIA_BLOCK, Optional.empty());
+    return new OlympiaTargetingGasLimitCalculator(OLYMPIA_BLOCK, feeMarket);
+  }
+
+  @Test
+  public void preOlympiaBlockReturnedUnchanged() {
+    final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
+    // At the activation block itself: no change (≤ olympiaBlock gate)
+    assertThat(calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK))
+        .isEqualTo(PRE_OLYMPIA_GAS_LIMIT);
+  }
+
+  @Test
+  public void olympiaCalculatorDoesNotDoubleAtFork() {
+    // BUG 1 regression: the very first post-Olympia block must NOT double the gas limit.
+    final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
+    final long firstBlock = OLYMPIA_BLOCK + 1;
+    final long result = calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, PRE_OLYMPIA_GAS_LIMIT, firstBlock);
+    assertThat(result)
+        .as("First Olympia block must NOT double the gas limit (London 2× must not apply to ETC)")
+        .isLessThan(PRE_OLYMPIA_GAS_LIMIT * 2);
+  }
+
+  @Test
+  public void gasLimitDeltaAtFirstOlympiaBlock() {
+    // Yellow Paper: delta = currentGasLimit / 1024 - 1 = 8_000_000 / 1024 - 1 = 7_811
+    final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
+    final long result = calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + 1);
+    assertThat(result - PRE_OLYMPIA_GAS_LIMIT)
+        .as("Delta at first Olympia block must be gasLimit/1024 - 1 = 7,811")
+        .isEqualTo(7_811L);
+  }
+
+  @Test
+  public void olympiaCalculatorIgnoresPassedTarget() {
+    // BUG 3 regression: even when miner config target == current (no --target-gas-limit),
+    // the calculator still converges toward the hardcoded 60M.
+    final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
+    final long result =
+        calc.nextGasLimit(
+            PRE_OLYMPIA_GAS_LIMIT,
+            PRE_OLYMPIA_GAS_LIMIT, // miner sees same value — would freeze with Frontier calc
+            OLYMPIA_BLOCK + 1);
+    assertThat(result)
+        .as("OlympiaTargetingGasLimitCalculator must increase toward 60M ignoring miner target")
+        .isGreaterThan(PRE_OLYMPIA_GAS_LIMIT);
+  }
+
   @Test
   public void convergenceFrom8MTo60MIn2055Blocks() {
-    final FrontierTargetingGasLimitCalculator calc = new FrontierTargetingGasLimitCalculator();
+    // Cross-client parity: core-geth and Fukuii both converge in exactly 2,055 blocks.
+    final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
     long gasLimit = PRE_OLYMPIA_GAS_LIMIT;
     final long threshold = OLYMPIA_GAS_TARGET * 99 / 100; // 99% of 60M
+
+    int blocks = 0;
+    while (gasLimit < threshold && blocks < 200_000) {
+      gasLimit = calc.nextGasLimit(gasLimit, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + blocks + 1);
+      blocks++;
+    }
+
+    assertThat(gasLimit).isGreaterThanOrEqualTo(threshold);
+    assertThat(blocks)
+        .as("Cross-client parity (core-geth, fukuii): must converge in exactly 2,055 blocks")
+        .isEqualTo(2055);
+  }
+
+  // ===== FrontierTargetingGasLimitCalculator — kept as reference baseline =====
+
+  @Test
+  public void frontierCalculatorConvergesIn2055BlocksReference() {
+    // This test validates the underlying Frontier ±1/1024 algorithm produces the same 2,055-block
+    // convergence. It is the reference used before OlympiaTargetingGasLimitCalculator existed.
+    final FrontierTargetingGasLimitCalculator calc = new FrontierTargetingGasLimitCalculator();
+    long gasLimit = PRE_OLYMPIA_GAS_LIMIT;
+    final long threshold = OLYMPIA_GAS_TARGET * 99 / 100;
 
     int blocks = 0;
     while (gasLimit < threshold && blocks < 200_000) {
@@ -73,9 +152,10 @@ public class OlympiaGasLimitSecurityTest {
     }
 
     assertThat(gasLimit).isGreaterThanOrEqualTo(threshold);
-    // Must match core-geth and fukuii: exactly 2,055 blocks
     assertThat(blocks).isEqualTo(2055);
   }
+
+  // ===== Stability and validation =====
 
   @Test
   public void stableAt60MTarget() {

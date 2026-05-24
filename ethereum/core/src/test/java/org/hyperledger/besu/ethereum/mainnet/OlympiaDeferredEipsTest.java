@@ -15,6 +15,20 @@
 package org.hyperledger.besu.ethereum.mainnet;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.AGHARTA_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.ATLANTIS_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.CHAIN_ID;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.CLASSIC_FORK_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.DEFUSE_BOMB_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.DIE_HARD_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.GOTHAM_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.MAGNETO_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.MYSTIQUE_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.OLYMPIA_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.PHOENIX_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.SPIRAL_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.THANOS_BLOCK;
+import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.TREASURY;
 
 import org.hyperledger.besu.config.StubGenesisConfigOptions;
 import org.hyperledger.besu.datatypes.Address;
@@ -29,7 +43,6 @@ import org.hyperledger.besu.ethereum.vm.Eip7709BlockHashLookup;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.metrics.noop.NoOpMetricsSystem;
 
-import java.math.BigInteger;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -42,10 +55,6 @@ import org.junit.jupiter.api.Test;
  */
 public class OlympiaDeferredEipsTest {
 
-  private static final BigInteger CHAIN_ID = BigInteger.valueOf(61);
-  private static final long SPIRAL_BLOCK = 19_250_000L;
-  private static final long OLYMPIA_BLOCK = 24_751_337L;
-  private static final Address TREASURY = OlympiaTestConstants.TREASURY;
   private static final Address HISTORY_STORAGE_ADDRESS =
       Address.fromHexString("0x0000f90827f1c53a10cb7a02335b175320002935");
 
@@ -56,16 +65,16 @@ public class OlympiaDeferredEipsTest {
     StubGenesisConfigOptions config = new StubGenesisConfigOptions();
     config.chainId(CHAIN_ID);
 
-    config.classicForkBlock(1_920_000L);
-    config.dieHard(3_000_000L);
-    config.gotham(5_000_000L);
-    config.defuseDifficultyBomb(5_900_000L);
-    config.atlantis(8_772_000L);
-    config.agharta(9_573_000L);
-    config.phoenix(10_500_839L);
-    config.thanos(11_700_000L);
-    config.magneto(13_189_133L);
-    config.mystique(14_525_000L);
+    config.classicForkBlock(CLASSIC_FORK_BLOCK);
+    config.dieHard(DIE_HARD_BLOCK);
+    config.gotham(GOTHAM_BLOCK);
+    config.defuseDifficultyBomb(DEFUSE_BOMB_BLOCK);
+    config.atlantis(ATLANTIS_BLOCK);
+    config.agharta(AGHARTA_BLOCK);
+    config.phoenix(PHOENIX_BLOCK);
+    config.thanos(THANOS_BLOCK);
+    config.magneto(MAGNETO_BLOCK);
+    config.mystique(MYSTIQUE_BLOCK);
     config.spiral(SPIRAL_BLOCK);
     config.olympia(OLYMPIA_BLOCK);
     config.olympiaTreasuryAddress(TREASURY);
@@ -179,16 +188,23 @@ public class OlympiaDeferredEipsTest {
         .isEqualTo(8_388_608);
   }
 
-  // ===== EIP-7935: Default gas limit (60M) — documentation only =====
+  // ===== EIP-7935: Default gas limit (60M) — protocol-enforced, not miner-config =====
 
   @Test
-  public void eip7935IsMinerPolicyOnly() {
-    // EIP-7935 sets a recommended default gas limit of 60M.
-    // This is NOT enforced in the protocol spec — it's miner configuration.
-    // The gas limit calculator does NOT enforce a minimum block gas limit.
+  public void eip7935TargetIsHardcodedNotFromMinerConfig() {
+    // BUG 3 regression: OlympiaTargetingGasLimitCalculator ignores the passed targetGasLimit and
+    // converges toward the hardcoded 60M. Even when miner config has no --target-gas-limit set
+    // (so targetGasLimit == currentGasLimit), the gas limit still increases post-Olympia.
     ProtocolSpec olympia = specAt(OLYMPIA_BLOCK);
-    assertThat(olympia.getGasLimitCalculator())
-        .as("Gas limit calculator should be EIP-1559 elastic (not enforcing a minimum)")
-        .isInstanceOf(OlympiaTargetingGasLimitCalculator.class);
+    long result =
+        olympia
+            .getGasLimitCalculator()
+            .nextGasLimit(
+                8_000_000L,
+                8_000_000L, // miner sees same value — would freeze with Frontier calc
+                OLYMPIA_BLOCK + 1);
+    assertThat(result)
+        .as("OlympiaTargetingGasLimitCalculator must increase toward 60M even with no miner target")
+        .isGreaterThan(8_000_000L);
   }
 }
