@@ -378,7 +378,6 @@ public class AdminNodeInfoTest {
     assertThat(response).usingRecursiveComparison().isEqualTo(expectedResponse);
   }
 
-<<<<<<< HEAD
   @Test
   @SuppressWarnings("unchecked")
   public void shouldReturnIPv6FieldsWhenDualStack() {
