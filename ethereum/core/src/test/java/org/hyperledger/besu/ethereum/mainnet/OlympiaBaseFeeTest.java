@@ -76,8 +76,7 @@ public class OlympiaBaseFeeTest {
     final LondonFeeMarket fm = feeMarket();
 
     for (long parentFee = 0; parentFee <= 20; parentFee++) {
-      final Wei result =
-          fm.computeBaseFee(OLYMPIA_BLOCK + 1, Wei.of(parentFee), 0L, GAS_TARGET);
+      final Wei result = fm.computeBaseFee(OLYMPIA_BLOCK + 1, Wei.of(parentFee), 0L, GAS_TARGET);
       assertThat(result.getAsBigInteger().signum())
           .as("computeBaseFee must never return negative (parentFee=%d)", parentFee)
           .isGreaterThanOrEqualTo(0);
@@ -121,8 +120,7 @@ public class OlympiaBaseFeeTest {
     // When gasUsed == gasTarget, base fee is unchanged.
     final LondonFeeMarket fm = feeMarket();
     final Wei parentFee = Wei.of(1_500_000_000L);
-    final Wei result =
-        fm.computeBaseFee(OLYMPIA_BLOCK + 1, parentFee, GAS_TARGET, GAS_TARGET);
+    final Wei result = fm.computeBaseFee(OLYMPIA_BLOCK + 1, parentFee, GAS_TARGET, GAS_TARGET);
     assertThat(result).as("BaseFee must be stable when gasUsed == gasTarget").isEqualTo(parentFee);
   }
 }

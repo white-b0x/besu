@@ -14,9 +14,9 @@
  */
 package org.hyperledger.besu.ethereum.mainnet;
 
-import java.math.BigInteger;
-
 import org.hyperledger.besu.datatypes.Address;
+
+import java.math.BigInteger;
 
 /**
  * Shared Olympia test constants — single source of truth for all ETC fork block numbers, chain ID,

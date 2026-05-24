@@ -66,8 +66,7 @@ public class OlympiaGasLimitConvergenceTest {
   @Test
   public void stableAt60M() {
     final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
-    final long next =
-        calc.nextGasLimit(OLYMPIA_GAS_TARGET, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + 1);
+    final long next = calc.nextGasLimit(OLYMPIA_GAS_TARGET, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + 1);
     assertThat(next)
         .as("At 60M target, gas limit must remain stable at 60M")
         .isEqualTo(OLYMPIA_GAS_TARGET);
@@ -113,7 +112,8 @@ public class OlympiaGasLimitConvergenceTest {
 
     assertThat(gasLimit).isGreaterThanOrEqualTo(threshold);
     assertThat(blocks)
-        .as("Cross-client parity (core-geth, Fukuii): 8M→99%% of 60M must take exactly 2,055 blocks")
+        .as(
+            "Cross-client parity (core-geth, Fukuii): 8M→99%% of 60M must take exactly 2,055 blocks")
         .isEqualTo(2055);
   }
 }

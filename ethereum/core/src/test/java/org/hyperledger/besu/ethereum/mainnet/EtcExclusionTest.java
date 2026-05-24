@@ -107,7 +107,9 @@ public class EtcExclusionTest {
     };
     for (long block : forkBlocks) {
       assertThat(specAt(block).getWithdrawalsProcessor())
-          .as("Fork at block %d must NOT have withdrawals processor (ETC is PoW, no staking)", block)
+          .as(
+              "Fork at block %d must NOT have withdrawals processor (ETC is PoW, no staking)",
+              block)
           .isEmpty();
     }
   }

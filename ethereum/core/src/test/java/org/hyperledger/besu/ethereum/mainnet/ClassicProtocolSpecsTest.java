@@ -24,6 +24,8 @@ import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.OLYMPI
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.PHOENIX;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.SPIRAL;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.THANOS;
+import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MAX_GAS_LIMIT;
+import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MIN_GAS_LIMIT;
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.AGHARTA_BLOCK;
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.ATLANTIS_BLOCK;
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.CHAIN_ID;
@@ -37,8 +39,6 @@ import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.OLYMPIA
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.PHOENIX_BLOCK;
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.SPIRAL_BLOCK;
 import static org.hyperledger.besu.ethereum.mainnet.OlympiaTestConstants.THANOS_BLOCK;
-import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MAX_GAS_LIMIT;
-import static org.hyperledger.besu.ethereum.mainnet.AbstractGasLimitSpecification.DEFAULT_MIN_GAS_LIMIT;
 
 import org.hyperledger.besu.config.StubGenesisConfigOptions;
 import org.hyperledger.besu.ethereum.chain.BadBlockManager;

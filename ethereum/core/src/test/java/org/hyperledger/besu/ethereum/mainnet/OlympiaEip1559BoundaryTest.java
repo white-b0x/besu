@@ -34,9 +34,9 @@ import org.junit.jupiter.api.Test;
 /**
  * Opcode availability tests for the Spiral→Olympia EVM boundary (ECIP-1111 + ECIP-1121).
  *
- * <p>ECIP-1111 (EIP-3198): BASEFEE opcode (0x48) added at Olympia, absent from Spiral.
- * ECIP-1121 (EIP-5656, EIP-1153): MCOPY (0x5e), TLOAD (0x5c), TSTORE (0x5d) added at Olympia.
- * Blob EIPs (EIP-4844 BLOBHASH 0x49, EIP-7516 BLOBBASEFEE 0x4a) are NOT in ETC Olympia.
+ * <p>ECIP-1111 (EIP-3198): BASEFEE opcode (0x48) added at Olympia, absent from Spiral. ECIP-1121
+ * (EIP-5656, EIP-1153): MCOPY (0x5e), TLOAD (0x5c), TSTORE (0x5d) added at Olympia. Blob EIPs
+ * (EIP-4844 BLOBHASH 0x49, EIP-7516 BLOBBASEFEE 0x4a) are NOT in ETC Olympia.
  */
 public class OlympiaEip1559BoundaryTest {
 

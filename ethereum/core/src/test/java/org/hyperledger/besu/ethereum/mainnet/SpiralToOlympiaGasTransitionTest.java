@@ -60,7 +60,8 @@ public class SpiralToOlympiaGasTransitionTest {
     final BlockHeader header =
         new BlockHeaderTestFixture().gasLimit(PRE_OLYMPIA_GAS_LIMIT * 2).buildHeader();
     assertThat(rule.validate(header, parent))
-        .as("2× gas jump at Olympia activation must be REJECTED — Fukuii SpiralToOlympiaGasTransitionSpec parity")
+        .as(
+            "2× gas jump at Olympia activation must be REJECTED — Fukuii SpiralToOlympiaGasTransitionSpec parity")
         .isFalse();
   }
 
@@ -82,8 +83,7 @@ public class SpiralToOlympiaGasTransitionTest {
     // At the Spiral activation block (≤ olympiaBlock gate), the calculator returns the parent
     // gas limit unchanged — no early creep toward 60M at Spiral.
     final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
-    final long result =
-        calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, SPIRAL_BLOCK);
+    final long result = calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, SPIRAL_BLOCK);
     assertThat(result)
         .as("Gas limit must be unchanged at Spiral activation (no premature 60M targeting)")
         .isEqualTo(PRE_OLYMPIA_GAS_LIMIT);

@@ -67,8 +67,7 @@ public class OlympiaGasLimitSecurityTest {
   // ===== OlympiaTargetingGasLimitCalculator — correct producer behaviour =====
 
   private OlympiaTargetingGasLimitCalculator olympiaCalc() {
-    final LondonFeeMarket feeMarket =
-        new LondonFeeMarket(OLYMPIA_BLOCK, Optional.empty());
+    final LondonFeeMarket feeMarket = new LondonFeeMarket(OLYMPIA_BLOCK, Optional.empty());
     return new OlympiaTargetingGasLimitCalculator(OLYMPIA_BLOCK, feeMarket);
   }
 
@@ -95,7 +94,8 @@ public class OlympiaGasLimitSecurityTest {
   public void gasLimitDeltaAtFirstOlympiaBlock() {
     // Yellow Paper: delta = currentGasLimit / 1024 - 1 = 8_000_000 / 1024 - 1 = 7_811
     final OlympiaTargetingGasLimitCalculator calc = olympiaCalc();
-    final long result = calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + 1);
+    final long result =
+        calc.nextGasLimit(PRE_OLYMPIA_GAS_LIMIT, OLYMPIA_GAS_TARGET, OLYMPIA_BLOCK + 1);
     assertThat(result - PRE_OLYMPIA_GAS_LIMIT)
         .as("Delta at first Olympia block must be gasLimit/1024 - 1 = 7,811")
         .isEqualTo(7_811L);
