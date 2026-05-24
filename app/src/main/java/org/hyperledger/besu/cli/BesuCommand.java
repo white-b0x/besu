@@ -365,6 +365,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       description = "The path to Besu data directory (default: ${DEFAULT-VALUE})")
   Path dataPath = getDefaultBesuDataPath(this);
 
+  @CommandLine.Option(
+      names = {"--tmp-path"},
+      paramLabel = MANDATORY_PATH_FORMAT_HELP,
+      description =
+          "The path for temporary files (default: <data-path>/tmp). "
+              + "Overrides java.io.tmpdir to keep temp writes within the data directory.")
+  Path tmpPath = null;
+
   // Genesis file path with null default option.
   // This default is handled by Runner
   // to use mainnet json file from resources as indicated in the
@@ -993,6 +1001,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       ephemeryNextCycleId = ephemeryNextCycleId.add(BigInteger.ONE);
     }
 
+    configureTmpDirectory();
+
     configure();
 
     setIgnorableStorageSegments();
@@ -1373,6 +1383,25 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    */
   public static Optional<Boolean> getColorEnabled() {
     return Optional.ofNullable(colorEnabled);
+  }
+
+  private void configureTmpDirectory() {
+    final Path resolvedTmpPath;
+    if (tmpPath != null) {
+      resolvedTmpPath = tmpPath.toAbsolutePath();
+    } else {
+      resolvedTmpPath = dataDir().resolve("tmp");
+    }
+    try {
+      Files.createDirectories(resolvedTmpPath);
+    } catch (final IOException e) {
+      throw new ParameterException(
+          this.commandLine,
+          "Failed to create tmp directory " + resolvedTmpPath + ": " + e.getMessage(),
+          e);
+    }
+    System.setProperty("java.io.tmpdir", resolvedTmpPath.toString());
+    logger.info("Temporary directory set to {}", resolvedTmpPath);
   }
 
   @VisibleForTesting
