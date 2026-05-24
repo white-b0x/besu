@@ -23,7 +23,6 @@ import org.hyperledger.besu.ethereum.eth.manager.peertask.PeerTaskExecutorResult
 import org.hyperledger.besu.ethereum.eth.manager.peertask.task.GetHeadersFromPeerTask;
 import org.hyperledger.besu.ethereum.eth.manager.peertask.task.GetHeadersFromPeerTask.Direction;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
-import org.hyperledger.besu.ethereum.p2p.rlpx.wire.messages.DisconnectMessage;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -92,12 +91,11 @@ public class ChainHeadTracker {
                 return CompletableFuture.completedFuture(chainHeadHeader);
               } else {
                 LOG.atDebug()
-                    .setMessage("Failed to retrieve chain head info. Disconnecting {}... {}")
+                    .setMessage(
+                        "Failed to retrieve chain head info from {} ({}). Peer will be added with unknown height.")
                     .addArgument(peer::getLoggableId)
                     .addArgument(taskResult.responseCode())
                     .log();
-                peer.disconnect(
-                    DisconnectMessage.DisconnectReason.USELESS_PEER_FAILED_TO_RETRIEVE_CHAIN_HEAD);
                 return CompletableFuture.completedFuture(null);
               }
             });

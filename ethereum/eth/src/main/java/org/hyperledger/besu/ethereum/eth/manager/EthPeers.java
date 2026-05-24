@@ -591,12 +591,15 @@ public class EthPeers implements PeerSelector {
     future.whenComplete(
         (peerHeadBlockHeader, error) -> {
           if (peerHeadBlockHeader == null) {
-            LOG.debug(
-                "Failed to retrieve chain head info. Disconnecting {}... {}",
-                peer.getLoggableId(),
-                error);
-            peer.disconnect(
-                DisconnectMessage.DisconnectReason.USELESS_PEER_FAILED_TO_RETRIEVE_CHAIN_HEAD);
+            LOG.atDebug()
+                .setMessage(
+                    "Failed to retrieve chain head from {}. Adding peer with unknown height.")
+                .addArgument(peer::getLoggableId)
+                .log();
+            if (!peer.getConnection().isDisconnected() && addPeerToEthPeers(peer)) {
+              connectedPeersCounter.inc();
+              connectCallbacks.forEach(cb -> cb.onPeerConnected(peer));
+            }
           } else {
 
             // we can check trailing peers now
