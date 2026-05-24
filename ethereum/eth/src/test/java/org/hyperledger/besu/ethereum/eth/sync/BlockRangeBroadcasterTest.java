@@ -180,8 +180,7 @@ public class BlockRangeBroadcasterTest {
     when(powPeer.chainState()).thenReturn(chainState);
     when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
 
-    final Difficulty realTD =
-        Difficulty.of(new BigInteger("24244691155597214264244"));
+    final Difficulty realTD = Difficulty.of(new BigInteger("24244691155597214264244"));
     final Hash knownHash =
         Hash.wrap(
             org.apache.tuweni.bytes.Bytes32.fromHexString(

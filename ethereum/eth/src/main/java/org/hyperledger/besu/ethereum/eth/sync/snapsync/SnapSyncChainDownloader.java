@@ -15,8 +15,10 @@
  */
 package org.hyperledger.besu.ethereum.eth.sync.snapsync;
 
+import org.hyperledger.besu.config.MergeConfiguration;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
+import org.hyperledger.besu.ethereum.chain.DefaultBlockchain;
 import org.hyperledger.besu.ethereum.chain.MutableBlockchain;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Difficulty;
@@ -430,6 +432,21 @@ public class SnapSyncChainDownloader
               LOG.debug(
                   "Stage 1 complete: Backward header download finished in {} seconds",
                   stage1Duration.toSeconds());
+
+              // PoW chains only: backfill total difficulty for all downloaded headers.
+              // storeBlockHeaders() does not write putTotalDifficulty(), so Tier-1/Tier-2
+              // ETH69 peer TD lookups fail until Stage 2 (unsafeImportSyncBodiesAndReceipts)
+              // catches up. The backfill populates TD from genesis to pivot in one forward pass
+              // so that ETH69 estimates are accurate during Stage 2.
+              if (!MergeConfiguration.isMergeEnabled()) {
+                final long anchorBlockNumber =
+                    state.blockDownloadAnchor() != null
+                        ? state.blockDownloadAnchor().getNumber()
+                        : 0L;
+                final long pivotBlockNumber = state.pivotBlockHeader().getNumber();
+                new PoWTdBackfillStep((DefaultBlockchain) protocolContext.getBlockchain())
+                    .backfillTd(anchorBlockNumber, pivotBlockNumber);
+              }
 
               // Mark headers download as complete and persist
               chainSyncState.updateAndGet(ChainSyncState::withHeadersDownloadComplete);

@@ -484,16 +484,28 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
               peerTD = byNumber.get();
               tdSource = "CANONICAL_NUMBER";
             } else {
-              // Tier 3: proportional scaling — fallback for peers ahead of our chain head
+              // Tier 3: marginal-rate estimate — fallback for peers ahead of our chain head.
+              // Uses current block difficulty as the per-block rate for the gap, not the
+              // historical average (ourTD/ourBestNum). For ETC, genesis-era low difficulty
+              // drags the historical avg to ~582 TH/block vs current-era 2000–4300 TH/block.
+              // 9999/10000 guarantees a slight underestimate (< 0.01%) so we never assign
+              // a peer higher priority than their real ETH68 TD would warrant.
               final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
               final long ourBestNum = blockchain.getChainHeadBlockNumber();
               if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
+                final BigInteger ourCurrentDiff =
+                    blockchain.getChainHeadHeader().getDifficulty().getAsBigInteger();
+                final BigInteger gap =
+                    BigInteger.valueOf(Math.max(0L, peerLatestBlock - ourBestNum));
                 peerTD =
                     Difficulty.of(
                         ourTD
                             .getAsBigInteger()
-                            .multiply(BigInteger.valueOf(peerLatestBlock))
-                            .divide(BigInteger.valueOf(ourBestNum)));
+                            .add(
+                                ourCurrentDiff
+                                    .multiply(gap)
+                                    .multiply(BigInteger.valueOf(9999L))
+                                    .divide(BigInteger.valueOf(10000L))));
               } else {
                 peerTD = Difficulty.ZERO;
               }

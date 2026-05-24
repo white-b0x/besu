@@ -133,16 +133,25 @@ public class BlockRangeBroadcaster {
         resolvedTD = byNumber.get();
         tdSource = "CANONICAL_NUMBER";
       } else {
-        // Tier 3: proportional scaling — fallback for peers ahead of our chain head
+        // Tier 3: marginal-rate estimate — fallback for peers ahead of our chain head.
+        // Uses current block difficulty as the per-block rate for the gap, not the
+        // historical average (ourTD/ourBestNum). 9999/10000 guarantees a slight
+        // underestimate (< 0.01%) so we never overshoot the real ETH68 TD.
         final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
         final long ourBestNum = blockchain.getChainHeadBlockNumber();
         if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
+          final BigInteger ourCurrentDiff =
+              blockchain.getChainHeadHeader().getDifficulty().getAsBigInteger();
+          final BigInteger gap = BigInteger.valueOf(Math.max(0L, latestBlockNumber - ourBestNum));
           resolvedTD =
               Difficulty.of(
                   ourTD
                       .getAsBigInteger()
-                      .multiply(BigInteger.valueOf(latestBlockNumber))
-                      .divide(BigInteger.valueOf(ourBestNum)));
+                      .add(
+                          ourCurrentDiff
+                              .multiply(gap)
+                              .multiply(BigInteger.valueOf(9999L))
+                              .divide(BigInteger.valueOf(10000L))));
           tdSource = "PROPORTIONAL_SCALING";
         } else {
           return;
