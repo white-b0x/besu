@@ -36,6 +36,8 @@
     "thanosBlock": 109,
     "magnetoBlock": 110,
     "mystiqueBlock": 111,
-    "spiralBlock": 112
+    "spiralBlock": 112,
+    "olympiaBlock": 113,
+    "olympiaTreasuryAddress": "0xcfe1e0ecbff745e6c800ff980178a8ddef94bee2"
   }
 }

@@ -501,6 +501,22 @@ public interface GenesisConfigOptions {
   OptionalLong getSpiralBlockNumber();
 
   /**
+   * Block number to activate Olympia on Classic networks.
+   *
+   * @return block number of Olympia fork on Classic networks
+   * @see <a
+   *     href="https://ecips.ethereumclassic.org/ECIPs/ecip-1111">https://ecips.ethereumclassic.org/ECIPs/ecip-1111</a>
+   */
+  OptionalLong getOlympiaBlockNumber();
+
+  /**
+   * Treasury address for Olympia on Classic networks. Receives basefee credits per ECIP-1111.
+   *
+   * @return treasury address for Olympia fork on Classic networks
+   */
+  Optional<Address> getOlympiaTreasuryAddress();
+
+  /**
    * Block number to activate ECBP-1100 (MESS) on Classic networks.
    *
    * @return block number of ECBP-1100 activation on Classic networks

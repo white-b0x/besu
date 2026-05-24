@@ -167,7 +167,9 @@ public interface HardforkId {
     /** Mystique fork. */
     MYSTIQUE(true, "Mystique"),
     /** Spiral fork. */
-    SPIRAL(true, "Spiral");
+    SPIRAL(true, "Spiral"),
+    /** Olympia fork. */
+    OLYMPIA(true, "Olympia");
 
     final boolean finalized;
     final String description;

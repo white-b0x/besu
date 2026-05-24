@@ -21,6 +21,7 @@ import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.GOTHAM
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.MAGNETO;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.MYSTIQUE;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.PHOENIX;
+import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.OLYMPIA;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.SPIRAL;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.THANOS;
 
@@ -28,10 +29,12 @@ import org.hyperledger.besu.config.StubGenesisConfigOptions;
 import org.hyperledger.besu.ethereum.chain.BadBlockManager;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.BerlinGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.DieHardGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.IstanbulGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
+import org.hyperledger.besu.evm.gascalculator.OsakaGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.ShanghaiGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.SpuriousDragonGasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
@@ -71,6 +74,9 @@ public class ClassicProtocolSpecsTest {
     config.magneto(13_189_133L);
     config.mystique(14_525_000L);
     config.spiral(19_250_000L);
+    config.olympia(24_751_337L);
+    config.olympiaTreasuryAddress(
+        Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2"));
 
     ProtocolScheduleBuilder builder =
         new ProtocolScheduleBuilder(
@@ -220,7 +226,7 @@ public class ClassicProtocolSpecsTest {
   // --- All forks use legacy fee market (no EIP-1559 until Olympia) ---
 
   @Test
-  public void allClassicForksUseLegacyFeeMarket() {
+  public void allPreOlympiaClassicForksUseLegacyFeeMarket() {
     long[] forkBlocks = {
       3_000_000L, 5_000_000L, 5_900_000L, 8_772_000L,
       9_573_000L, 10_500_839L, 11_700_000L, 13_189_133L,
@@ -231,5 +237,36 @@ public class ClassicProtocolSpecsTest {
           .as("Fork at block %d should use legacy fee market", block)
           .isFalse();
     }
+  }
+
+  // --- Olympia ---
+
+  @Test
+  public void olympiaFork() {
+    assertThat(specAt(24_751_337L).getHardforkId()).isEqualTo(OLYMPIA);
+  }
+
+  @Test
+  public void olympiaUsesOsakaGasCalculator() {
+    assertThat(specAt(24_751_337L).getGasCalculator()).isInstanceOf(OsakaGasCalculator.class);
+  }
+
+  @Test
+  public void olympiaUsesOlympiaBlockProcessor() {
+    assertThat(specAt(24_751_337L).getBlockProcessor()).isInstanceOf(OlympiaBlockProcessor.class);
+  }
+
+  @Test
+  public void olympiaEnablesEip1559() {
+    assertThat(specAt(24_751_337L).getFeeMarket().implementsBaseFee())
+        .as("Olympia must enable EIP-1559 base fee market")
+        .isTrue();
+  }
+
+  @Test
+  public void olympiaHasNoWithdrawalsProcessor() {
+    assertThat(specAt(24_751_337L).getWithdrawalsProcessor())
+        .as("Olympia must NOT have withdrawals processor (ETC is PoW)")
+        .isEmpty();
   }
 }

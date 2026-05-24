@@ -454,6 +454,17 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
   }
 
   @Override
+  public OptionalLong getOlympiaBlockNumber() {
+    return getOptionalLong("olympiablock");
+  }
+
+  @Override
+  public Optional<Address> getOlympiaTreasuryAddress() {
+    Optional<String> inputAddress = JsonUtil.getString(configRoot, "olympiatreasuryaddress");
+    return inputAddress.map(Address::fromHexString);
+  }
+
+  @Override
   public OptionalLong getEcbp1100Block() {
     return getOptionalLong("ecbp1100block");
   }
@@ -572,6 +583,9 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
     getMagnetoBlockNumber().ifPresent(l -> builder.put("magnetoBlock", l));
     getMystiqueBlockNumber().ifPresent(l -> builder.put("mystiqueBlock", l));
     getSpiralBlockNumber().ifPresent(l -> builder.put("spiralBlock", l));
+    getOlympiaBlockNumber().ifPresent(l -> builder.put("olympiaBlock", l));
+    getOlympiaTreasuryAddress()
+        .ifPresent(l -> builder.put("olympiaTreasuryAddress", l.toHexString()));
     getEcbp1100Block().ifPresent(l -> builder.put("ecbp1100Block", l));
     getEcbp1100DeactivateBlock().ifPresent(l -> builder.put("ecbp1100DeactivateBlock", l));
 
@@ -697,7 +711,8 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
             getThanosBlockNumber(),
             getMagnetoBlockNumber(),
             getMystiqueBlockNumber(),
-            getSpiralBlockNumber());
+            getSpiralBlockNumber(),
+            getOlympiaBlockNumber());
     // when adding forks add an entry to ${REPO_ROOT}/config/src/test/resources/all_forks.json
 
     return forkBlockNumbers

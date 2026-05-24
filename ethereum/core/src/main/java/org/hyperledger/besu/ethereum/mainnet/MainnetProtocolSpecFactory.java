@@ -493,4 +493,16 @@ public class MainnetProtocolSpecFactory {
         balConfiguration,
         metricsSystem);
   }
+
+  public ProtocolSpecBuilder olympiaDefinition() {
+    return ClassicProtocolSpecs.olympiaDefinition(
+        chainId,
+        isRevertReasonEnabled,
+        genesisConfigOptions,
+        evmConfiguration,
+        miningConfiguration,
+        isParallelTxProcessingEnabled,
+        balConfiguration,
+        metricsSystem);
+  }
 }

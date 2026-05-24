@@ -18,8 +18,13 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerIstanbulOperations;
 
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
+import org.hyperledger.besu.evm.operation.BaseFeeOperation;
+import org.hyperledger.besu.evm.operation.MCopyOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.operation.Push0Operation;
+import org.hyperledger.besu.evm.operation.SelfDestructOperation;
+import org.hyperledger.besu.evm.operation.TLoadOperation;
+import org.hyperledger.besu.evm.operation.TStoreOperation;
 
 import java.math.BigInteger;
 
@@ -62,6 +67,53 @@ public class ClassicEVMs {
     OperationRegistry registry = new OperationRegistry();
     registerIstanbulOperations(registry, gasCalculator, chainId, evmConfiguration);
     registry.put(new Push0Operation(gasCalculator));
+    return registry;
+  }
+
+  /**
+   * olympia evm.
+   *
+   * @param gasCalculator the gas calculator
+   * @param chainId the chain id
+   * @param evmConfiguration the evm configuration
+   * @return the evm
+   */
+  public static EVM olympia(
+      final GasCalculator gasCalculator,
+      final BigInteger chainId,
+      final EvmConfiguration evmConfiguration) {
+    return new EVM(
+        olympiaOperations(gasCalculator, chainId, evmConfiguration),
+        gasCalculator,
+        evmConfiguration,
+        EvmSpecVersion.PRAGUE);
+  }
+
+  /**
+   * olympia operations' registry.
+   *
+   * @param gasCalculator the gas calculator
+   * @param chainId the chain id
+   * @param evmConfiguration the evm configuration
+   * @return the operation registry
+   */
+  public static OperationRegistry olympiaOperations(
+      final GasCalculator gasCalculator,
+      final BigInteger chainId,
+      final EvmConfiguration evmConfiguration) {
+    OperationRegistry registry = new OperationRegistry();
+    registerIstanbulOperations(registry, gasCalculator, chainId, evmConfiguration);
+    // Spiral ops (ECIP-1109)
+    registry.put(new Push0Operation(gasCalculator));
+    // EIP-3198: BASEFEE opcode (ECIP-1111)
+    registry.put(new BaseFeeOperation(gasCalculator));
+    // EIP-1153: Transient storage (ECIP-1121)
+    registry.put(new TStoreOperation(gasCalculator));
+    registry.put(new TLoadOperation(gasCalculator));
+    // EIP-5656: MCOPY (ECIP-1121)
+    registry.put(new MCopyOperation(gasCalculator));
+    // EIP-6780: SELFDESTRUCT only in same tx (ECIP-1121)
+    registry.put(new SelfDestructOperation(gasCalculator, true));
     return registry;
   }
 }

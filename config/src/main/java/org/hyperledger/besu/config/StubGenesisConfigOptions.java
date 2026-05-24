@@ -76,6 +76,8 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   private OptionalLong magnetoBlockNumber = OptionalLong.empty();
   private OptionalLong mystiqueBlockNumber = OptionalLong.empty();
   private OptionalLong spiralBlockNumber = OptionalLong.empty();
+  private OptionalLong olympiaBlockNumber = OptionalLong.empty();
+  private Optional<Address> olympiaTreasuryAddress = Optional.empty();
   private OptionalLong ecbp1100Block = OptionalLong.empty();
   private OptionalLong ecbp1100DeactivateBlock = OptionalLong.empty();
   private Optional<BigInteger> chainId = Optional.empty();
@@ -387,6 +389,16 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   @Override
   public OptionalLong getSpiralBlockNumber() {
     return spiralBlockNumber;
+  }
+
+  @Override
+  public OptionalLong getOlympiaBlockNumber() {
+    return olympiaBlockNumber;
+  }
+
+  @Override
+  public Optional<Address> getOlympiaTreasuryAddress() {
+    return olympiaTreasuryAddress;
   }
 
   @Override
@@ -1026,6 +1038,28 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
    */
   public StubGenesisConfigOptions spiral(final long blockNumber) {
     spiralBlockNumber = OptionalLong.of(blockNumber);
+    return this;
+  }
+
+  /**
+   * Olympia stub genesis config options.
+   *
+   * @param blockNumber the block number
+   * @return the stub genesis config options
+   */
+  public StubGenesisConfigOptions olympia(final long blockNumber) {
+    olympiaBlockNumber = OptionalLong.of(blockNumber);
+    return this;
+  }
+
+  /**
+   * Olympia treasury address stub genesis config options.
+   *
+   * @param address the treasury address
+   * @return the stub genesis config options
+   */
+  public StubGenesisConfigOptions olympiaTreasuryAddress(final Address address) {
+    olympiaTreasuryAddress = Optional.of(address);
     return this;
   }
 

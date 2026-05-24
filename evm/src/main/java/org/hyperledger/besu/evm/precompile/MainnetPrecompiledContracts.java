@@ -177,6 +177,35 @@ public interface MainnetPrecompiledContracts {
   }
 
   /**
+   * Populate registry for Olympia (ETC). Istanbul base + BLS12-381 + MODEXP(1024) + P256VERIFY. No
+   * KZG point evaluation (no blobs on ETC).
+   *
+   * @param registry the registry
+   * @param gasCalculator the gas calculator
+   */
+  static void populateForOlympia(
+      final PrecompileContractRegistry registry, final GasCalculator gasCalculator) {
+    populateForIstanbul(registry, gasCalculator);
+
+    // EIP-2537 - BLS12-381 curve operations
+    registry.put(Address.BLS12_G1ADD, new BLS12G1AddPrecompiledContract());
+    registry.put(Address.BLS12_G1MULTIEXP, new BLS12G1MultiExpPrecompiledContract());
+    registry.put(Address.BLS12_G2ADD, new BLS12G2AddPrecompiledContract());
+    registry.put(Address.BLS12_G2MULTIEXP, new BLS12G2MultiExpPrecompiledContract());
+    registry.put(Address.BLS12_PAIRING, new BLS12PairingPrecompiledContract());
+    registry.put(Address.BLS12_MAP_FP_TO_G1, new BLS12MapFpToG1PrecompiledContract());
+    registry.put(Address.BLS12_MAP_FP2_TO_G2, new BLS12MapFp2ToG2PrecompiledContract());
+
+    // EIP-7823 - Set upper bounds for MODEXP
+    registry.put(
+        Address.MODEXP,
+        new BigIntegerModularExponentiationPrecompiledContract(gasCalculator, 1024L));
+
+    // EIP-7951 - secp256r1 P256VERIFY
+    registry.put(P256_VERIFY, new P256VerifyPrecompiledContract(gasCalculator));
+  }
+
+  /**
    * Osaka precompile contract registry.
    *
    * @param gasCalculator the gas calculator

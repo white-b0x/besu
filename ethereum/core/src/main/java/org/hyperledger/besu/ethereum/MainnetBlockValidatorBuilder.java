@@ -25,6 +25,9 @@ public class MainnetBlockValidatorBuilder {
   private static final int OSAKA_SAFETY_MARGIN = 2_097_152; // 2 MB
   private static final int OSAKA_MAX_RLP_BLOCK_SIZE = OSAKA_MAX_BLOCK_SIZE - OSAKA_SAFETY_MARGIN;
 
+  /** EIP-7934: Block RLP size limit for ETC Olympia hard fork (8 MB). */
+  public static final int OLYMPIA_MAX_RLP_BLOCK_SIZE = 8_388_608;
+
   /** Use the static methods to create instances of BlockValidator. */
   private MainnetBlockValidatorBuilder() {}
 
@@ -70,5 +73,27 @@ public class MainnetBlockValidatorBuilder {
         blockProcessor,
         blockAccessListValidator,
         OSAKA_MAX_RLP_BLOCK_SIZE);
+  }
+
+  /**
+   * Creates a block validator for ETC Olympia with EIP-7934 block size limit (8 MB).
+   *
+   * @param blockHeaderValidator the block header validator
+   * @param blockBodyValidator the block body validator
+   * @param blockProcessor the block processor
+   * @param blockAccessListValidator the block access list validator
+   * @return a BlockValidator instance with Olympia-specific settings
+   */
+  public static BlockValidator olympia(
+      final BlockHeaderValidator blockHeaderValidator,
+      final BlockBodyValidator blockBodyValidator,
+      final BlockProcessor blockProcessor,
+      final BlockAccessListValidator blockAccessListValidator) {
+    return new MainnetBlockValidator(
+        blockHeaderValidator,
+        blockBodyValidator,
+        blockProcessor,
+        blockAccessListValidator,
+        OLYMPIA_MAX_RLP_BLOCK_SIZE);
   }
 }

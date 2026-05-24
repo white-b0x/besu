@@ -77,6 +77,11 @@ public class GenesisConfigClassicTest {
   }
 
   @Test
+  public void mordorOlympiaBlock() {
+    assertThat(loadMordorConfig().getOlympiaBlockNumber()).isEqualTo(OptionalLong.of(15800850));
+  }
+
+  @Test
   public void mordorEcip1017EraRounds() {
     assertThat(loadMordorConfig().getEcip1017EraRounds()).isEqualTo(OptionalLong.of(2000000));
   }
@@ -136,6 +141,11 @@ public class GenesisConfigClassicTest {
   }
 
   @Test
+  public void classicOlympiaBlock() {
+    assertThat(loadClassicConfig().getOlympiaBlockNumber()).isEqualTo(OptionalLong.of(24751337));
+  }
+
+  @Test
   public void classicEcip1017EraRoundsDefaultsToEmpty() {
     // Classic mainnet doesn't explicitly set ecip1017EraRounds; ClassicBlockProcessor defaults to 5M
     assertThat(loadClassicConfig().getEcip1017EraRounds()).isEmpty();
@@ -165,8 +175,9 @@ public class GenesisConfigClassicTest {
         .magneto(500L)
         .mystique(600L)
         .spiral(700L)
-        .ecbp1100(800L)
-        .ecbp1100Deactivate(900L);
+        .olympia(800L)
+        .ecbp1100(900L)
+        .ecbp1100Deactivate(1000L);
 
     assertThat(stub.getAtlantisBlockNumber()).isEqualTo(OptionalLong.of(100));
     assertThat(stub.getAghartaBlockNumber()).isEqualTo(OptionalLong.of(200));
@@ -175,8 +186,9 @@ public class GenesisConfigClassicTest {
     assertThat(stub.getMagnetoBlockNumber()).isEqualTo(OptionalLong.of(500));
     assertThat(stub.getMystiqueBlockNumber()).isEqualTo(OptionalLong.of(600));
     assertThat(stub.getSpiralBlockNumber()).isEqualTo(OptionalLong.of(700));
-    assertThat(stub.getEcbp1100Block()).isEqualTo(OptionalLong.of(800));
-    assertThat(stub.getEcbp1100DeactivateBlock()).isEqualTo(OptionalLong.of(900));
+    assertThat(stub.getOlympiaBlockNumber()).isEqualTo(OptionalLong.of(800));
+    assertThat(stub.getEcbp1100Block()).isEqualTo(OptionalLong.of(900));
+    assertThat(stub.getEcbp1100DeactivateBlock()).isEqualTo(OptionalLong.of(1000));
   }
 
   @Test
@@ -199,6 +211,8 @@ public class GenesisConfigClassicTest {
     assertThat(map).containsKey("magnetoBlock");
     assertThat(map).containsKey("mystiqueBlock");
     assertThat(map).containsKey("spiralBlock");
+    assertThat(map).containsKey("olympiaBlock");
+    assertThat(map).containsKey("olympiaTreasuryAddress");
     assertThat(map).containsKey("ecbp1100Block");
     assertThat(map).containsKey("ecbp1100DeactivateBlock");
   }

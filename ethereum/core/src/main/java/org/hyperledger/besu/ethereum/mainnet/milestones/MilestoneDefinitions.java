@@ -90,7 +90,11 @@ public class MilestoneDefinitions {
         createBlockNumberMilestone(
             HardforkId.ClassicHardforkId.SPIRAL,
             config.getSpiralBlockNumber(),
-            specFactory::spiralDefinition));
+            specFactory::spiralDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.OLYMPIA,
+            config.getOlympiaBlockNumber(),
+            specFactory::olympiaDefinition));
   }
 
   /**
