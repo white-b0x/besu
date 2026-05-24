@@ -18,6 +18,7 @@ import static org.hyperledger.besu.ethereum.mainnet.milestones.MilestoneDefiniti
 import static org.hyperledger.besu.ethereum.mainnet.milestones.MilestoneDefinition.createTimestampMilestone;
 
 import org.hyperledger.besu.config.GenesisConfigOptions;
+import org.hyperledger.besu.datatypes.HardforkId;
 import org.hyperledger.besu.datatypes.HardforkId.MainnetHardforkId;
 import org.hyperledger.besu.ethereum.mainnet.MainnetProtocolSpecFactory;
 
@@ -25,16 +26,75 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalLong;
 
-/** Provides milestone definitions for the Ethereum Mainnet network. */
+/** Provides milestone definitions for the Ethereum Mainnet and Classic networks. */
 public class MilestoneDefinitions {
 
   public static List<MilestoneDefinition> createMilestoneDefinitions(
       final MainnetProtocolSpecFactory specFactory, final GenesisConfigOptions config) {
-    return createMainnetMilestoneDefinitions(specFactory, config);
+    List<MilestoneDefinition> milestones = new ArrayList<>();
+    milestones.addAll(createMainnetMilestoneDefinitions(specFactory, config));
+    milestones.addAll(createClassicMilestoneDefinitions(specFactory, config));
+    return milestones;
   }
 
   /**
-   * Creates the milestone definitions for the Mainnet network.
+   * Returns the milestone definitions for the Classic network.
+   *
+   * @param specFactory the protocol spec factory
+   * @param config the genesis config options
+   * @return a list of milestone definitions for the Classic network
+   */
+  private static List<MilestoneDefinition> createClassicMilestoneDefinitions(
+      final MainnetProtocolSpecFactory specFactory, final GenesisConfigOptions config) {
+    return List.of(
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.CLASSIC_TANGERINE_WHISTLE,
+            config.getEcip1015BlockNumber(),
+            specFactory::tangerineWhistleDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.DIE_HARD,
+            config.getDieHardBlockNumber(),
+            specFactory::dieHardDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.GOTHAM,
+            config.getGothamBlockNumber(),
+            specFactory::gothamDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.DEFUSE_DIFFICULTY_BOMB,
+            config.getDefuseDifficultyBombBlockNumber(),
+            specFactory::defuseDifficultyBombDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.ATLANTIS,
+            config.getAtlantisBlockNumber(),
+            specFactory::atlantisDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.AGHARTA,
+            config.getAghartaBlockNumber(),
+            specFactory::aghartaDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.PHOENIX,
+            config.getPhoenixBlockNumber(),
+            specFactory::phoenixDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.THANOS,
+            config.getThanosBlockNumber(),
+            specFactory::thanosDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.MAGNETO,
+            config.getMagnetoBlockNumber(),
+            specFactory::magnetoDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.MYSTIQUE,
+            config.getMystiqueBlockNumber(),
+            specFactory::mystiqueDefinition),
+        createBlockNumberMilestone(
+            HardforkId.ClassicHardforkId.SPIRAL,
+            config.getSpiralBlockNumber(),
+            specFactory::spiralDefinition));
+  }
+
+  /**
+   * Creates the milestone definitions for the Mainnet networks.
    *
    * @param specFactory the protocol spec factory
    * @param config the genesis config options

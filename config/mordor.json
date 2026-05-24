@@ -1,0 +1,29 @@
+{
+  "config": {
+    "chainId": 63,
+    "homesteadBlock": 0,
+    "eip150Block": 0,
+    "eip158Block": 0,
+    "byzantiumBlock": 0,
+    "constantinopleBlock": 301243,
+    "petersburgBlock": 301243,
+    "istanbulBlock": 999983,
+    "berlinBlock": 3985893,
+    "londonBlock": 5520000,
+    "ethash": {},
+    "discovery": {
+      "dns": "enrtree://AJE62Q4DUX4QMMXEHCSSCSC65TDHZYSMONSD64P3WULVLSF6MRQ3K@all.mordor.blockd.info",
+      "bootnodes": [
+        "enode://4539a067ae1f6a7ffac509603ba37baf772fc832880ddc67c53f292b6199fb048267f0311c820bc90bfd39ec663bc6b5256bdf787ec38425c82bde6bc2bcfe3c@24.199.107.164:30303"
+      ]
+    }
+  },
+  "nonce": "0x0",
+  "timestamp": "0x5d9676db",
+  "extraData": "0x70686f656e697820636869636b656e206162737572642062616e616e61",
+  "gasLimit": "0x2fefd8",
+  "difficulty": "0x20000",
+  "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "coinbase": "0x0000000000000000000000000000000000000000",
+  "alloc": {}
+}

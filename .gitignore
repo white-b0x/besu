@@ -7,7 +7,21 @@
 *.log
 *.orig
 .classpath
-.claude
+# Claude Code internal files (local-only workspace)
+.claude/
+
+# Secrets & credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# Planning & internal docs
+SESSION_NOTES.md
+PLANNING.md
+SCRATCH.md
 .DS_Store
 .externalToolBuilders/
 .gradle/

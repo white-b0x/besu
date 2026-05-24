@@ -10,6 +10,12 @@
 
 Besu is an Apache 2.0 licensed, MainNet compatible, Ethereum client written in Java.
 
+## Ethereum Classic Support
+
+This branch (`etc`) includes full support for Ethereum Classic (ETC mainnet, chain ID 61) and the Mordor testnet (chain ID 63). All ETC forks through Spiral are implemented with ETChash mining, ECIP-1017 era-based rewards, and ECIP-1100 (MESS) anti-reorg protection.
+
+See [ETC-HANDOFF.md](ETC-HANDOFF.md) for architecture, test coverage, and running instructions.
+
 ## Useful Links
 
 * [Besu User Documentation]
