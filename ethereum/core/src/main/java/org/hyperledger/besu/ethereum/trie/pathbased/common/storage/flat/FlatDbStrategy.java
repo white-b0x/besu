@@ -24,6 +24,7 @@ import org.hyperledger.besu.plugin.services.storage.SegmentedKeyValueStorageTran
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -171,6 +172,18 @@ public abstract class FlatDbStrategy {
     return toNavigableMap(accountsToPairStream(storage, startKeyHash).takeWhile(takeWhile));
   }
 
+  public NavigableMap<Bytes32, Bytes> streamAccountFlatDatabase(
+      final SegmentedKeyValueStorage storage,
+      final Bytes startKeyHash,
+      final BooleanSupplier continueWhile,
+      final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
+
+    return toNavigableMap(
+        accountsToPairStream(storage, startKeyHash)
+            .takeWhile(__ -> continueWhile.getAsBoolean())
+            .takeWhile(takeWhile));
+  }
+
   /** streams RLP encoded storage values using a specified stream limit. */
   public NavigableMap<Bytes32, Bytes> streamStorageFlatDatabase(
       final SegmentedKeyValueStorage storage,
@@ -205,6 +218,18 @@ public abstract class FlatDbStrategy {
       final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
     return toNavigableMap(
         storageToPairStream(storage, accountHash, startKeyHash, RLP::encodeValue)
+            .takeWhile(takeWhile));
+  }
+
+  public NavigableMap<Bytes32, Bytes> streamStorageFlatDatabase(
+      final SegmentedKeyValueStorage storage,
+      final Hash accountHash,
+      final Bytes startKeyHash,
+      final BooleanSupplier continueWhile,
+      final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
+    return toNavigableMap(
+        storageToPairStream(storage, accountHash, startKeyHash, RLP::encodeValue)
+            .takeWhile(__ -> continueWhile.getAsBoolean())
             .takeWhile(takeWhile));
   }
 

@@ -319,6 +319,14 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
         .addArgument(() -> asLogHash(Bytes32.wrap(range.startKeyHash().getBytes())))
         .addArgument(() -> asLogHash(Bytes32.wrap(range.endKeyHash().getBytes())))
         .log();
+    LOGGER
+        .atDebug()
+        .setMessage("SNAP AccountRange request: peer={} start={} end={} stateRoot={}")
+        .addArgument(peerId)
+        .addArgument(() -> asLogHash(Bytes32.wrap(range.startKeyHash().getBytes())))
+        .addArgument(() -> asLogHash(Bytes32.wrap(range.endKeyHash().getBytes())))
+        .addArgument(() -> asLogHash(Bytes32.wrap(range.worldStateRootHash().getBytes())))
+        .log();
     try {
       if (range.worldStateRootHash().equals(Hash.EMPTY_TRIE_HASH)) {
         return AccountRangeMessage.create(new HashMap<>(), List.of(MerkleTrie.EMPTY_TRIE_NODE));
@@ -347,7 +355,18 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
 
                 NavigableMap<Bytes32, Bytes> accounts =
                     storage.streamFlatAccounts(
-                        range.startKeyHash().getBytes(), shouldContinuePredicate);
+                        range.startKeyHash().getBytes(),
+                        () -> stopWatch.getTime() <= maxMillisPerRequest,
+                        shouldContinuePredicate);
+
+                if (accounts.isEmpty() && stopWatch.getTime() > maxMillisPerRequest) {
+                  LOGGER.warn(
+                      "account [peer={}] empty range scan exceeded timeout: {}ms, start={} end={}",
+                      peerId,
+                      stopWatch.getTime(),
+                      asLogHash(Bytes32.wrap(range.startKeyHash().getBytes())),
+                      asLogHash(Bytes32.wrap(range.endKeyHash().getBytes())));
+                }
 
                 if (accounts.isEmpty() && shouldContinuePredicate.shouldContinue.get()) {
                   var fromNextHash =
@@ -433,6 +452,18 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
                     .map(SnapServer::asLogHash)
                     .collect(Collectors.joining(",", "[", "]")))
         .log();
+    LOGGER
+        .atDebug()
+        .setMessage("SNAP StorageRange request: peer={} accounts={} start={} end={}")
+        .addArgument(peerId)
+        .addArgument(range.hashes()::size)
+        .addArgument(() -> asLogHash(Bytes32.wrap(range.startKeyHash().getBytes())))
+        .addArgument(
+            () ->
+                Optional.ofNullable(range.endKeyHash())
+                    .map(h -> asLogHash(Bytes32.wrap(h.getBytes())))
+                    .orElse("''"))
+        .log();
     try {
       return worldStateStorageProvider
           .apply(range.worldStateRootHash())
@@ -475,12 +506,23 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
                     new WorldStateProofProvider(new WorldStateStorageCoordinator(storage));
 
                 for (var forAccountHash : range.hashes()) {
+                  if (stopWatch.getTime() > maxMillisPerRequest) break;
                   var predicate =
                       new ExceedingPredicate<>(
                           new EndKeyExceedsPredicate(endKeyBytes).and(responsePredicate));
                   var accountStorages =
                       storage.streamFlatStorages(
-                          Hash.wrap(forAccountHash), startKeyBytes, predicate);
+                          Hash.wrap(forAccountHash),
+                          startKeyBytes,
+                          () -> stopWatch.getTime() <= maxMillisPerRequest,
+                          predicate);
+                  if (accountStorages.isEmpty() && stopWatch.getTime() > maxMillisPerRequest) {
+                    LOGGER.warn(
+                        "storage [peer={}] empty range scan exceeded timeout: {}ms, account={}",
+                        peerId,
+                        stopWatch.getTime(),
+                        asLogHash(forAccountHash));
+                  }
 
                   //// address partial range queries that return empty
                   if (accountStorages.isEmpty() && isPartialRange) {
@@ -569,6 +611,12 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
         .setMessage("Received get bytecodes message for {} hashes")
         .addArgument(codeHashes.hashes()::size)
         .log();
+    LOGGER
+        .atDebug()
+        .setMessage("SNAP Bytecodes request: peer={} hashes={}")
+        .addArgument(peerId)
+        .addArgument(codeHashes.hashes()::size)
+        .log();
 
     try {
       List<Bytes> codeBytes = new ArrayDeque<>();
@@ -632,6 +680,13 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
         .atTrace()
         .setMessage("Received get trie nodes message of size {}")
         .addArgument(() -> triePaths.paths().size())
+        .log();
+    LOGGER
+        .atDebug()
+        .setMessage("SNAP TrieNodes request: peer={} paths={} stateRoot={}")
+        .addArgument(peerId)
+        .addArgument(() -> triePaths.paths().size())
+        .addArgument(() -> asLogHash(Bytes32.wrap(triePaths.worldStateRootHash().getBytes())))
         .log();
 
     try {
@@ -763,6 +818,7 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
     final AtomicInteger byteLimit = new AtomicInteger(0);
     final AtomicInteger recordLimit = new AtomicInteger(0);
     final AtomicBoolean shouldContinue = new AtomicBoolean(true);
+    final AtomicBoolean warned = new AtomicBoolean(false);
     final Function<T, Integer> encodingSizeAccumulator;
     final StopWatch stopWatch;
     final int maxResponseBytes;
@@ -793,12 +849,14 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
           .log();
       if (stopWatch.getTime() > maxMillisPerRequest) {
         shouldContinue.set(false);
-        LOGGER.warn(
-            "{} took too long, stopped at {} ms with {} records and {} bytes",
-            forWhat,
-            stopWatch.formatTime(),
-            recordLimit.get(),
-            byteLimit.get());
+        if (warned.compareAndSet(false, true)) {
+          LOGGER.warn(
+              "{} took too long, stopped at {} ms with {} records and {} bytes",
+              forWhat,
+              stopWatch.formatTime(),
+              recordLimit.get(),
+              byteLimit.get());
+        }
         return false;
       }
 

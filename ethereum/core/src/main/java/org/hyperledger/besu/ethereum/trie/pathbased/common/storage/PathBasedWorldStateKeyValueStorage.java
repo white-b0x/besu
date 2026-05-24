@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -143,6 +144,15 @@ public abstract class PathBasedWorldStateKeyValueStorage
         .streamAccountFlatDatabase(composedWorldStateStorage, startKeyHash, takeWhile);
   }
 
+  public NavigableMap<Bytes32, Bytes> streamFlatAccounts(
+      final Bytes startKeyHash,
+      final BooleanSupplier continueWhile,
+      final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
+    return getFlatDbStrategy()
+        .streamAccountFlatDatabase(
+            composedWorldStateStorage, startKeyHash, continueWhile, takeWhile);
+  }
+
   public NavigableMap<Bytes32, Bytes> streamFlatStorages(
       final Hash accountHash, final Bytes startKeyHash, final Bytes32 endKeyHash, final long max) {
     return getFlatDbStrategy()
@@ -156,6 +166,16 @@ public abstract class PathBasedWorldStateKeyValueStorage
       final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
     return getFlatDbStrategy()
         .streamStorageFlatDatabase(composedWorldStateStorage, accountHash, startKeyHash, takeWhile);
+  }
+
+  public NavigableMap<Bytes32, Bytes> streamFlatStorages(
+      final Hash accountHash,
+      final Bytes startKeyHash,
+      final BooleanSupplier continueWhile,
+      final Predicate<Pair<Bytes32, Bytes>> takeWhile) {
+    return getFlatDbStrategy()
+        .streamStorageFlatDatabase(
+            composedWorldStateStorage, accountHash, startKeyHash, continueWhile, takeWhile);
   }
 
   public boolean isWorldStateAvailable(final Bytes32 rootHash, final Hash blockHash) {
