@@ -1012,7 +1012,7 @@ public class DefaultBlockchainTest {
 
     assertThat(blockchain.getTotalDifficultyCache().get().size()).isEqualTo(1);
     assertThat(blockchain.getTotalDifficultyCache().get().getIfPresent(newBlock.getHash()))
-        .isEqualTo(newBlock.getHeader().getDifficulty());
+        .isEqualTo(blockchain.getChainHead().getTotalDifficulty());
   }
 
   @Test

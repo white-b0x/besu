@@ -22,6 +22,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.hyperledger.besu.metrics.BesuMetricCategory.BLOCKCHAIN;
 
+import org.hyperledger.besu.config.MergeConfiguration;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.chain.BlockchainStorage.Updater;
@@ -44,6 +45,7 @@ import org.hyperledger.besu.plugin.services.metrics.Counter;
 import org.hyperledger.besu.util.InvalidConfigurationException;
 import org.hyperledger.besu.util.Subscribers;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -631,8 +633,6 @@ public class DefaultBlockchain implements MutableBlockchain {
     cacheBlockHeader(block.getHeader());
     blockBodiesCache.ifPresent(cache -> cache.put(block.getHash(), block.getBody()));
     transactionReceiptsCache.ifPresent(cache -> cache.put(block.getHash(), receipts));
-    totalDifficultyCache.ifPresent(
-        cache -> cache.put(block.getHash(), block.getHeader().getDifficulty()));
     blockAccessListCache.ifPresent(
         cache -> blockAccessList.ifPresent(t -> cache.put(block.getHash(), t)));
   }
@@ -667,6 +667,7 @@ public class DefaultBlockchain implements MutableBlockchain {
     final List<TransactionReceipt> receipts = blockWithReceipts.getReceipts();
     final Hash hash = block.getHash();
     final Difficulty td = calculateTotalDifficulty(block.getHeader());
+    totalDifficultyCache.ifPresent(cache -> cache.put(hash, td));
 
     final BlockchainStorage.Updater updater = blockchainStorage.updater();
 
@@ -748,13 +749,71 @@ public class DefaultBlockchain implements MutableBlockchain {
     if (blockHeader.getNumber() == BlockHeader.GENESIS_BLOCK_NUMBER) {
       return blockHeader.getDifficulty();
     }
+    return blockchainStorage
+        .getTotalDifficulty(blockHeader.getParentHash())
+        .map(parentTD -> blockHeader.getDifficulty().add(parentTD))
+        .orElseGet(
+            () -> {
+              if (MergeConfiguration.isMergeEnabled()) {
+                throw new IllegalStateException("Blockchain is missing total difficulty data.");
+              }
+              return recoverMissingParentTd(blockHeader);
+            });
+  }
 
-    final Difficulty parentTotalDifficulty =
-        blockchainStorage
-            .getTotalDifficulty(blockHeader.getParentHash())
-            .orElseThrow(
-                () -> new IllegalStateException("Blockchain is missing total difficulty data."));
-    return blockHeader.getDifficulty().add(parentTotalDifficulty);
+  /**
+   * Recovers a missing parent TD by walking backward through stored block headers to find the
+   * nearest ancestor with a known TD, then forward-fills the gap and returns the TD for {@code
+   * blockHeader}. Only called on PoW chains (!MergeConfiguration.isMergeEnabled()).
+   */
+  private Difficulty recoverMissingParentTd(final BlockHeader blockHeader) {
+    final ArrayDeque<BlockHeader> gap = new ArrayDeque<>();
+    BlockHeader cursor = blockHeader;
+
+    while (true) {
+      final Optional<Difficulty> existingTd =
+          blockchainStorage.getTotalDifficulty(cursor.getHash());
+      if (existingTd.isPresent()) {
+        // cursor is the anchor — forward-fill all blocks in the gap
+        Difficulty td = existingTd.get();
+        final BlockchainStorage.Updater updater = blockchainStorage.updater();
+        for (final BlockHeader h : gap) {
+          td = td.add(h.getDifficulty());
+          updater.putTotalDifficulty(h.getHash(), td);
+        }
+        updater.commit();
+        LOG.info(
+            "Recovered missing PoW TD for {} block(s) up to block {}",
+            gap.size(),
+            blockHeader.getNumber());
+        return td;
+      }
+
+      if (cursor.getNumber() == BlockHeader.GENESIS_BLOCK_NUMBER) {
+        // Genesis has no stored TD — bootstrap from genesis difficulty
+        Difficulty td = cursor.getDifficulty();
+        final BlockchainStorage.Updater updater = blockchainStorage.updater();
+        updater.putTotalDifficulty(cursor.getHash(), td);
+        for (final BlockHeader h : gap) {
+          td = td.add(h.getDifficulty());
+          updater.putTotalDifficulty(h.getHash(), td);
+        }
+        updater.commit();
+        return td;
+      }
+
+      final long parentBlockNumber = cursor.getNumber() - 1;
+      final BlockHeader parent =
+          blockchainStorage
+              .getBlockHeader(cursor.getParentHash())
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Cannot recover PoW TD: missing block header at block "
+                              + parentBlockNumber));
+      gap.addFirst(cursor); // cursor is newer than parent and needs its TD written
+      cursor = parent;
+    }
   }
 
   /**

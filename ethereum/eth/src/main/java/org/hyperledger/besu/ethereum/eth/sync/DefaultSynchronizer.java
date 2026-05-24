@@ -263,6 +263,11 @@ public class DefaultSynchronizer implements Synchronizer, UnverifiedForkchoiceLi
         return CompletableFuture.completedFuture(null);
       }
 
+      if (!MergeConfiguration.isMergeEnabled()
+          && protocolContext.getBlockchain() instanceof DefaultBlockchain db) {
+        PoWTdBackfillStep.repairPoWTdIfNeeded(db);
+      }
+
       if (result.hasPivotBlockHash())
         LOG.info(
             "Sync completed successfully with pivot block {}",
