@@ -235,16 +235,20 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
   private void registerResponseConstructors() {
     snapMessages.registerResponseConstructor(
         SnapV1.GET_ACCOUNT_RANGE,
-        (peer, messageData, capability) -> constructGetAccountRangeResponse(messageData));
+        (peer, messageData, capability) ->
+            constructGetAccountRangeResponse(peer.getLoggableId(), messageData));
     snapMessages.registerResponseConstructor(
         SnapV1.GET_STORAGE_RANGE,
-        (peer, messageData, capability) -> constructGetStorageRangeResponse(messageData));
+        (peer, messageData, capability) ->
+            constructGetStorageRangeResponse(peer.getLoggableId(), messageData));
     snapMessages.registerResponseConstructor(
         SnapV1.GET_BYTECODES,
-        (peer, messageData, capability) -> constructGetBytecodesResponse(messageData));
+        (peer, messageData, capability) ->
+            constructGetBytecodesResponse(peer.getLoggableId(), messageData));
     snapMessages.registerResponseConstructor(
         SnapV1.GET_TRIE_NODES,
-        (peer, messageData, capability) -> constructGetTrieNodesResponse(messageData));
+        (peer, messageData, capability) ->
+            constructGetTrieNodesResponse(peer.getLoggableId(), messageData));
     snapMessages.registerResponseConstructor(
         SnapV2.GET_BLOCK_ACCESS_LISTS,
         (peer, messageData, capability) -> constructGetBlockAccessListsResponse(messageData));
@@ -295,6 +299,10 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
   }
 
   MessageData constructGetAccountRangeResponse(final MessageData message) {
+    return constructGetAccountRangeResponse("unknown", message);
+  }
+
+  MessageData constructGetAccountRangeResponse(final String peerId, final MessageData message) {
     if (!isStarted.get()) {
       return EMPTY_ACCOUNT_RANGE;
     }
@@ -322,7 +330,7 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
                 LOGGER.trace("obtained worldstate in {}", stopWatch);
                 ResponseSizePredicate<Pair<Bytes32, Bytes>> responseSizePredicate =
                     new ResponseSizePredicate<>(
-                        "account",
+                        "account [peer=" + peerId + "]",
                         stopWatch,
                         maxResponseBytes,
                         maxMillisPerRequest,
@@ -396,6 +404,10 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
   }
 
   MessageData constructGetStorageRangeResponse(final MessageData message) {
+    return constructGetStorageRangeResponse("unknown", message);
+  }
+
+  MessageData constructGetStorageRangeResponse(final String peerId, final MessageData message) {
     if (!isStarted.get()) {
       return EMPTY_STORAGE_RANGE;
     }
@@ -430,7 +442,7 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
                 // reusable predicate to limit by rec count and bytes:
                 var responsePredicate =
                     new ResponseSizePredicate<Pair<Bytes32, Bytes>>(
-                        "storage",
+                        "storage [peer=" + peerId + "]",
                         stopWatch,
                         maxResponseBytes,
                         maxMillisPerRequest,
@@ -540,6 +552,10 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
   }
 
   MessageData constructGetBytecodesResponse(final MessageData message) {
+    return constructGetBytecodesResponse("unknown", message);
+  }
+
+  MessageData constructGetBytecodesResponse(final String peerId, final MessageData message) {
     if (!isStarted.get()) {
       return EMPTY_BYTE_CODES_MESSAGE;
     }
@@ -559,7 +575,7 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
       final ExceedingPredicate<Pair<Bytes32, Bytes>> byteCodesResponseSizePredicate =
           new ExceedingPredicate<>(
               new ResponseSizePredicate<>(
-                  "bytecodes",
+                  "bytecodes [peer=" + peerId + "]",
                   stopWatch,
                   maxResponseBytes,
                   maxMillisPerRequest,
@@ -600,6 +616,10 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
   }
 
   MessageData constructGetTrieNodesResponse(final MessageData message) {
+    return constructGetTrieNodesResponse("unknown", message);
+  }
+
+  MessageData constructGetTrieNodesResponse(final String peerId, final MessageData message) {
     if (!isStarted.get()) {
       return EMPTY_TRIE_NODES_MESSAGE;
     }
@@ -624,7 +644,7 @@ class SnapServer implements BesuEvents.InitialSyncCompletionListener {
                 final ExceedingPredicate<Bytes> trieNodesResponseSizePredicate =
                     new ExceedingPredicate<>(
                         new ResponseSizePredicate<>(
-                            "trie nodes",
+                            "trie nodes [peer=" + peerId + "]",
                             stopWatch,
                             maxResponseBytes,
                             maxMillisPerRequest,

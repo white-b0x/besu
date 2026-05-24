@@ -514,7 +514,7 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
           }
           if (!peerTD.equals(Difficulty.ZERO)) {
             peer.chainState().statusReceived(status.bestHash(), peerTD);
-            LOG.atInfo()
+            ("PROPORTIONAL_SCALING".equals(tdSource) ? LOG.atInfo() : LOG.atDebug())
                 .setMessage(
                     "ETH69 PoW TD resolved - totalDifficulty={} latestBlock={} source={} peer={}")
                 .addArgument(peerTD)

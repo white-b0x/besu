@@ -28,8 +28,10 @@ import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
 import org.hyperledger.besu.metrics.SyncDurationMetrics;
 import org.hyperledger.besu.plugin.services.MetricsSystem;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +39,15 @@ import org.slf4j.LoggerFactory;
 public class FullSyncDownloader {
 
   private static final Logger LOG = LoggerFactory.getLogger(FullSyncDownloader.class);
+  private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(60);
+
   private final ChainDownloader chainDownloader;
   private final Optional<ChainDownloader> era1PrepipelineChainDownloader;
   private final SynchronizerConfiguration syncConfig;
   private final ProtocolContext protocolContext;
+  private final EthContext ethContext;
   private final SyncState syncState;
+  private ScheduledFuture<?> heartbeatTask;
 
   public FullSyncDownloader(
       final SynchronizerConfiguration syncConfig,
@@ -55,6 +61,7 @@ public class FullSyncDownloader {
       final SyncDurationMetrics syncDurationMetrics) {
     this.syncConfig = syncConfig;
     this.protocolContext = protocolContext;
+    this.ethContext = ethContext;
     this.syncState = syncState;
 
     if (syncConfig.getSyncMode() == SyncMode.FULL && syncConfig.era1ImportPrepipelineEnabled()) {
@@ -89,6 +96,12 @@ public class FullSyncDownloader {
   }
 
   public CompletableFuture<Void> start() {
+    heartbeatTask =
+        ethContext
+            .getScheduler()
+            .scheduleFutureTaskWithFixedDelay(
+                this::logSyncStatus, HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL);
+
     if (era1PrepipelineChainDownloader.isPresent()) {
       LOG.info(
           "Starting ERA1 file import prepipeline. Full sync will start after prepipeline completion");
@@ -106,8 +119,20 @@ public class FullSyncDownloader {
   }
 
   public void stop() {
+    if (heartbeatTask != null) {
+      heartbeatTask.cancel(false);
+    }
     era1PrepipelineChainDownloader.ifPresent((p) -> p.cancel());
     chainDownloader.cancel();
+  }
+
+  private void logSyncStatus() {
+    LOG.atInfo()
+        .setMessage("[SYNC] chain head: block={} td={} peers={}")
+        .addArgument(protocolContext.getBlockchain().getChainHeadBlockNumber())
+        .addArgument(protocolContext.getBlockchain().getChainHead().getTotalDifficulty())
+        .addArgument(ethContext.getEthPeers().peerCount())
+        .log();
   }
 
   public TrailingPeerRequirements calculateTrailingPeerRequirements() {
