@@ -140,9 +140,7 @@ public class EtcMainnetLiveTest {
   @Test
   public void etcMainnetNoBaseFeePreOlympia() throws Exception {
     EthBlock.Block block = getLatestBlock(web3j);
-    assertThat(block.getBaseFeePerGas())
-        .as("No baseFee on ETC mainnet (pre-Olympia)")
-        .isNull();
+    assertThat(block.getBaseFeePerGas()).as("No baseFee on ETC mainnet (pre-Olympia)").isNull();
   }
 
   @Test
@@ -160,9 +158,7 @@ public class EtcMainnetLiveTest {
     long now = Instant.now().getEpochSecond();
     long ageSec = now - blockTimestamp;
     // Public RPC may lag slightly, allow 10 minutes
-    assertThat(ageSec)
-        .as("Latest block should be within 10 minutes of wall clock")
-        .isLessThan(600);
+    assertThat(ageSec).as("Latest block should be within 10 minutes of wall clock").isLessThan(600);
   }
 
   @Test

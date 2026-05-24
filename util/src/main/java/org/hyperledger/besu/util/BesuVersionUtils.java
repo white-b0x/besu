@@ -37,7 +37,7 @@ public final class BesuVersionUtils {
   /** Sentinel value used when the version or commit metadata is not available. */
   public static final String UNKNOWN = "UNKNOWN";
 
-  private static final String CLIENT = "Besu-v26.3.0";
+  private static final String CLIENT = "olympia-besu-v26.3.0";
   private static final String VERSION;
   private static final String OS = PlatformDetector.getOS();
   private static final String VM = PlatformDetector.getVM();
@@ -93,7 +93,7 @@ public final class BesuVersionUtils {
    *     bytes
    */
   public static Bytes versionForExtraData() {
-    final var nameAndVersion = "Besu-v26.3.0".getBytes(StandardCharsets.UTF_8);
+    final var nameAndVersion = CLIENT.getBytes(StandardCharsets.UTF_8);
     return Bytes.wrap(nameAndVersion, 0, Math.min(32, nameAndVersion.length));
   }
 

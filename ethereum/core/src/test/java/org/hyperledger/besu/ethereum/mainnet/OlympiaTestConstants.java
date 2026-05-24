@@ -17,11 +17,11 @@ package org.hyperledger.besu.ethereum.mainnet;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
- * Shared Olympia test constants. Update the treasury address here when the
- * deployment changes (demo v0.2 → demo v0.3 → production).
+ * Shared Olympia test constants. Update the treasury address here when the deployment changes (demo
+ * v0.2 → demo v0.3 → production).
  *
- * <p>Demo v0.2: Pure Solidity, deployed via CREATE on Mordor + ETC mainnet.
- * Production: Will change to OZ 5.6 contract post-Olympia activation.
+ * <p>Demo v0.2: Pure Solidity, deployed via CREATE on Mordor + ETC mainnet. Production: Will change
+ * to OZ 5.6 contract post-Olympia activation.
  */
 public final class OlympiaTestConstants {
 

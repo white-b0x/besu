@@ -195,7 +195,7 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
                         .isValidMessageCode(
                             cap.getVersion(), EthProtocolMessages.BLOCK_RANGE_UPDATE));
     return hasSupportForBlockRangeMessage
-        ? new BlockRangeBroadcaster(ethContext, blockchain)
+        ? new BlockRangeBroadcaster(ethContext, blockchain, mergePeerFilter.isEmpty())
         : null;
   }
 
@@ -461,6 +461,57 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
             .addArgument(message::getConnection)
             .log();
         peer.registerStatusReceived(status, peer.getConnection());
+        // ETH69 STATUS omits totalDifficulty. For PoW ETC chains (mergePeerFilter absent), resolve
+        // via 3-tier: (1) exact hash lookup, (2) canonical block-number lookup (accurate for any
+        // peer <= our head), (3) proportional scaling as a non-inflating fallback.
+        if (mergePeerFilter.isEmpty() && status.isEth69Compatible()) {
+          final long peerLatestBlock = status.blockRange().orElseThrow().latestBlock();
+          final Difficulty peerTD;
+          final String tdSource;
+          // Tier 1: exact hash lookup — succeeds when peer's block is already in our chain
+          final Optional<Difficulty> byHash =
+              blockchain.getTotalDifficultyByHash(status.bestHash());
+          if (byHash.isPresent()) {
+            peerTD = byHash.get();
+            tdSource = "DB_LOOKUP";
+          } else {
+            // Tier 2: canonical block-number lookup — accurate for any peer height <= our head
+            final Optional<Difficulty> byNumber =
+                blockchain
+                    .getBlockHeader(peerLatestBlock)
+                    .flatMap(h -> blockchain.getTotalDifficultyByHash(h.getHash()));
+            if (byNumber.isPresent()) {
+              peerTD = byNumber.get();
+              tdSource = "CANONICAL_NUMBER";
+            } else {
+              // Tier 3: proportional scaling — fallback for peers ahead of our chain head
+              final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
+              final long ourBestNum = blockchain.getChainHeadBlockNumber();
+              if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
+                peerTD =
+                    Difficulty.of(
+                        ourTD
+                            .getAsBigInteger()
+                            .multiply(BigInteger.valueOf(peerLatestBlock))
+                            .divide(BigInteger.valueOf(ourBestNum)));
+              } else {
+                peerTD = Difficulty.ZERO;
+              }
+              tdSource = "PROPORTIONAL_SCALING";
+            }
+          }
+          if (!peerTD.equals(Difficulty.ZERO)) {
+            peer.chainState().statusReceived(status.bestHash(), peerTD);
+            LOG.atInfo()
+                .setMessage(
+                    "ETH69 PoW TD resolved - totalDifficulty={} latestBlock={} source={} peer={}")
+                .addArgument(peerTD)
+                .addArgument(peerLatestBlock)
+                .addArgument(tdSource)
+                .addArgument(peer::getLoggableId)
+                .log();
+          }
+        }
       }
     } catch (final RLPException e) {
       LOG.atDebug()

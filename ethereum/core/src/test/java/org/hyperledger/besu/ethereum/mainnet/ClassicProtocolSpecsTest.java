@@ -20,8 +20,8 @@ import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.DIE_HA
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.GOTHAM;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.MAGNETO;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.MYSTIQUE;
-import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.PHOENIX;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.OLYMPIA;
+import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.PHOENIX;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.SPIRAL;
 import static org.hyperledger.besu.datatypes.HardforkId.ClassicHardforkId.THANOS;
 
@@ -29,7 +29,6 @@ import org.hyperledger.besu.config.StubGenesisConfigOptions;
 import org.hyperledger.besu.ethereum.chain.BadBlockManager;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.gascalculator.BerlinGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.DieHardGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.IstanbulGasCalculator;
@@ -149,7 +148,8 @@ public class ClassicProtocolSpecsTest {
 
   @Test
   public void atlantisUsesSpuriousDragonGasCalculator() {
-    assertThat(specAt(8_772_000L).getGasCalculator()).isInstanceOf(SpuriousDragonGasCalculator.class);
+    assertThat(specAt(8_772_000L).getGasCalculator())
+        .isInstanceOf(SpuriousDragonGasCalculator.class);
   }
 
   @Test

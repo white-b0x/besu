@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OsakaTargetingGasLimitCalculatorTest {
   private static final long TARGET_BLOB_GAS_PER_BLOCK_OSAKA = 0x120000;
-  private static final long TRANSACTION_GAS_LIMIT_CAP = 16_777_216L;
+
   private final OsakaGasCalculator osakaGasCalculator = new OsakaGasCalculator();
   private final BaseFeeMarket feeMarket = FeeMarket.cancunDefault(0L, Optional.empty());
 

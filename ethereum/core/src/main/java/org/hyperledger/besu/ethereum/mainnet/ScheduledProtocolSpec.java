@@ -42,7 +42,10 @@ public interface ScheduledProtocolSpec {
 
     @Override
     public String toString() {
-      return String.format("%s:%d", name, milestone);
+      // 10^18 is the genesis JSON sentinel for "not yet scheduled"
+      return milestone == 1_000_000_000_000_000_000L
+          ? String.format("%s:%d (unscheduled)", name, milestone)
+          : String.format("%s:%d", name, milestone);
     }
   }
 

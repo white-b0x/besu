@@ -243,8 +243,7 @@ public class ProtocolScheduleBuilder {
         MilestoneDefinitions.createMilestoneDefinitions(specFactory, config)) {
       if (milestone.blockNumberOrTimestamp().isPresent()) {
         long thisForkValue = milestone.blockNumberOrTimestamp().getAsLong();
-        boolean isClassic =
-            milestone.hardforkId() instanceof HardforkId.ClassicHardforkId;
+        boolean isClassic = milestone.hardforkId() instanceof HardforkId.ClassicHardforkId;
         if (milestone.milestoneType() == MilestoneType.BLOCK_NUMBER) {
           long lastFork = isClassic ? lastClassicBlockFork : lastMainnetBlockFork;
           validateForkOrder(

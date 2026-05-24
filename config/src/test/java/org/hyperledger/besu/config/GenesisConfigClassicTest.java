@@ -95,7 +95,8 @@ public class GenesisConfigClassicTest {
 
   @Test
   public void mordorEcbp1100DeactivateBlock() {
-    assertThat(loadMordorConfig().getEcbp1100DeactivateBlock()).isEqualTo(OptionalLong.of(10400000));
+    assertThat(loadMordorConfig().getEcbp1100DeactivateBlock())
+        .isEqualTo(OptionalLong.of(10400000));
   }
 
   // --- Classic mainnet fork block numbers ---
@@ -147,7 +148,8 @@ public class GenesisConfigClassicTest {
 
   @Test
   public void classicEcip1017EraRoundsDefaultsToEmpty() {
-    // Classic mainnet doesn't explicitly set ecip1017EraRounds; ClassicBlockProcessor defaults to 5M
+    // Classic mainnet doesn't explicitly set ecip1017EraRounds; ClassicBlockProcessor defaults to
+    // 5M
     assertThat(loadClassicConfig().getEcip1017EraRounds()).isEmpty();
   }
 
@@ -160,7 +162,8 @@ public class GenesisConfigClassicTest {
 
   @Test
   public void classicEcbp1100DeactivateBlock() {
-    assertThat(loadClassicConfig().getEcbp1100DeactivateBlock()).isEqualTo(OptionalLong.of(19250000));
+    assertThat(loadClassicConfig().getEcbp1100DeactivateBlock())
+        .isEqualTo(OptionalLong.of(19250000));
   }
 
   // --- StubGenesisConfigOptions builder ---

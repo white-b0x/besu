@@ -144,7 +144,12 @@ public class ClassicBlockProcessorTest {
     // Block 10,000,001 is in era 2
     Wei reward = processor.getCoinbaseReward(BLOCK_REWARD, 10_000_001L, 0);
     // Era 2: 5 * (4/5)^2 = 5 * 16/25 = 3.2 ETC
-    Wei expected = Wei.of(BLOCK_REWARD.toBigInteger().multiply(java.math.BigInteger.valueOf(16)).divide(java.math.BigInteger.valueOf(25)));
+    Wei expected =
+        Wei.of(
+            BLOCK_REWARD
+                .toBigInteger()
+                .multiply(java.math.BigInteger.valueOf(16))
+                .divide(java.math.BigInteger.valueOf(25)));
     assertThat(reward).isEqualTo(expected);
   }
 
@@ -156,7 +161,12 @@ public class ClassicBlockProcessorTest {
     // Block 15,000,001 is in era 3
     Wei reward = processor.getCoinbaseReward(BLOCK_REWARD, 15_000_001L, 0);
     // Era 3: 5 * (4/5)^3 = 5 * 64/125 = 2.56 ETC
-    Wei expected = Wei.of(BLOCK_REWARD.toBigInteger().multiply(java.math.BigInteger.valueOf(64)).divide(java.math.BigInteger.valueOf(125)));
+    Wei expected =
+        Wei.of(
+            BLOCK_REWARD
+                .toBigInteger()
+                .multiply(java.math.BigInteger.valueOf(64))
+                .divide(java.math.BigInteger.valueOf(125)));
     assertThat(reward).isEqualTo(expected);
   }
 
@@ -168,7 +178,12 @@ public class ClassicBlockProcessorTest {
     // Block 20,000,001 is in era 4
     Wei reward = processor.getCoinbaseReward(BLOCK_REWARD, 20_000_001L, 0);
     // Era 4: 5 * (4/5)^4 = 5 * 256/625 = 2.048 ETC
-    Wei expected = Wei.of(BLOCK_REWARD.toBigInteger().multiply(java.math.BigInteger.valueOf(256)).divide(java.math.BigInteger.valueOf(625)));
+    Wei expected =
+        Wei.of(
+            BLOCK_REWARD
+                .toBigInteger()
+                .multiply(java.math.BigInteger.valueOf(256))
+                .divide(java.math.BigInteger.valueOf(625)));
     assertThat(reward).isEqualTo(expected);
   }
 
@@ -194,7 +209,12 @@ public class ClassicBlockProcessorTest {
     ClassicBlockProcessor processor = createMordorProcessor();
     // Mordor block 4,000,001 is in era 2
     Wei reward = processor.getCoinbaseReward(BLOCK_REWARD, 4_000_001L, 0);
-    Wei expected = Wei.of(BLOCK_REWARD.toBigInteger().multiply(java.math.BigInteger.valueOf(16)).divide(java.math.BigInteger.valueOf(25)));
+    Wei expected =
+        Wei.of(
+            BLOCK_REWARD
+                .toBigInteger()
+                .multiply(java.math.BigInteger.valueOf(16))
+                .divide(java.math.BigInteger.valueOf(25)));
     assertThat(reward).isEqualTo(expected);
   }
 
@@ -204,7 +224,8 @@ public class ClassicBlockProcessorTest {
   public void eraBoundaryLastBlockOfEra0() {
     ClassicBlockProcessor processor = createDefaultProcessor();
     // Block 5,000,000 is the last block of era 0
-    // getBlockEra: (5000000 - 1) % 5000000 = 4999999, base = 5000000 - 4999999 = 1, d = 1/5000000 = 0
+    // getBlockEra: (5000000 - 1) % 5000000 = 4999999, base = 5000000 - 4999999 = 1, d = 1/5000000 =
+    // 0
     Wei reward = processor.getCoinbaseReward(BLOCK_REWARD, 5_000_000L, 0);
     assertThat(reward).isEqualTo(Wei.fromEth(5));
   }

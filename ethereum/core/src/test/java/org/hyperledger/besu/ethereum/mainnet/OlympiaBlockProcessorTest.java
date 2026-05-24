@@ -22,7 +22,7 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.InMemoryKeyValueStorageProvider;
-import org.hyperledger.besu.ethereum.core.MutableWorldState;
+import org.hyperledger.besu.plugin.services.worldstate.MutableWorldState;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -56,8 +56,7 @@ public class OlympiaBlockProcessorTest {
         treasury);
   }
 
-  private BlockHeader header(
-      final long blockNumber, final Wei baseFee, final long gasUsed) {
+  private BlockHeader header(final long blockNumber, final Wei baseFee, final long gasUsed) {
     return new BlockHeaderTestFixture()
         .number(blockNumber)
         .coinbase(COINBASE)
@@ -78,7 +77,8 @@ public class OlympiaBlockProcessorTest {
     long gasUsed = 21_000L;
     BlockHeader blockHeader = header(1L, baseFee, gasUsed);
 
-    boolean result = processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
+    boolean result =
+        processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
 
     assertThat(result).isTrue();
     Wei expectedCredit = baseFee.multiply(gasUsed); // 21,000 gwei
@@ -106,7 +106,8 @@ public class OlympiaBlockProcessorTest {
 
     BlockHeader blockHeader = header(1L, Wei.of(1_000_000_000L), 21_000L);
 
-    boolean result = processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
+    boolean result =
+        processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
 
     assertThat(result).isTrue();
     // Only coinbase should have been credited (era reward), no treasury
@@ -203,11 +204,13 @@ public class OlympiaBlockProcessorTest {
     long gasUsed = 21_000L;
 
     // Process first block
-    processor.rewardCoinbase(worldState, header(1L, baseFee, gasUsed), Collections.emptyList(), false);
+    processor.rewardCoinbase(
+        worldState, header(1L, baseFee, gasUsed), Collections.emptyList(), false);
     Wei afterFirst = worldState.get(TREASURY).getBalance();
 
     // Process second block
-    processor.rewardCoinbase(worldState, header(2L, baseFee, gasUsed), Collections.emptyList(), false);
+    processor.rewardCoinbase(
+        worldState, header(2L, baseFee, gasUsed), Collections.emptyList(), false);
     Wei afterSecond = worldState.get(TREASURY).getBalance();
 
     Wei singleCredit = baseFee.multiply(gasUsed);
@@ -234,20 +237,22 @@ public class OlympiaBlockProcessorTest {
   @Test
   public void skipZeroBlockRewardsWithZeroReward() {
     // Test with zero block reward and skipZeroBlockRewards=true
-    OlympiaBlockProcessor processor = new OlympiaBlockProcessor(
-        mock(MainnetTransactionProcessor.class),
-        mock(AbstractBlockProcessor.TransactionReceiptFactory.class),
-        Wei.ZERO, // zero block reward
-        BlockHeader::getCoinbase,
-        true, // skipZeroBlockRewards
-        OptionalLong.of(5_000_000L),
-        mock(ProtocolSchedule.class),
-        BalConfiguration.DEFAULT,
-        Optional.of(TREASURY));
+    OlympiaBlockProcessor processor =
+        new OlympiaBlockProcessor(
+            mock(MainnetTransactionProcessor.class),
+            mock(AbstractBlockProcessor.TransactionReceiptFactory.class),
+            Wei.ZERO, // zero block reward
+            BlockHeader::getCoinbase,
+            true, // skipZeroBlockRewards
+            OptionalLong.of(5_000_000L),
+            mock(ProtocolSchedule.class),
+            BalConfiguration.DEFAULT,
+            Optional.of(TREASURY));
     MutableWorldState worldState = InMemoryKeyValueStorageProvider.createInMemoryWorldState();
 
     BlockHeader blockHeader = header(1L, Wei.of(1_000_000_000L), 21_000L);
-    boolean result = processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), true);
+    boolean result =
+        processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), true);
 
     // When skipZeroBlockRewards and reward is zero, the super returns true early
     // but the treasury credit should still be zero (super skipped, treasury still runs)
@@ -260,7 +265,8 @@ public class OlympiaBlockProcessorTest {
     MutableWorldState worldState = InMemoryKeyValueStorageProvider.createInMemoryWorldState();
 
     BlockHeader blockHeader = header(1L, Wei.of(1_000_000_000L), 21_000L);
-    boolean result = processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
+    boolean result =
+        processor.rewardCoinbase(worldState, blockHeader, Collections.emptyList(), false);
 
     assertThat(result).isTrue();
   }

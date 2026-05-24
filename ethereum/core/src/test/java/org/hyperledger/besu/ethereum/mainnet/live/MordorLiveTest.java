@@ -51,8 +51,7 @@ public class MordorLiveTest {
   @BeforeAll
   static void setup() {
     web3j = buildWeb3j(MORDOR_RPC);
-    Assumptions.assumeTrue(
-        isNodeAvailable(web3j), "Mordor node not available at " + MORDOR_RPC);
+    Assumptions.assumeTrue(isNodeAvailable(web3j), "Mordor node not available at " + MORDOR_RPC);
   }
 
   @Test
@@ -163,9 +162,7 @@ public class MordorLiveTest {
   public void mordorNoBaseFeePreSpiral() throws Exception {
     // Block at Spiral should not have baseFee (EIP-1559 is not enabled until Olympia)
     EthBlock.Block block = getBlock(web3j, MORDOR_SPIRAL_BLOCK);
-    assertThat(block.getBaseFeePerGas())
-        .as("No baseFee at Spiral (pre-Olympia)")
-        .isNull();
+    assertThat(block.getBaseFeePerGas()).as("No baseFee at Spiral (pre-Olympia)").isNull();
   }
 
   @Test
@@ -174,9 +171,7 @@ public class MordorLiveTest {
     long blockTimestamp = block.getTimestamp().longValue();
     long now = Instant.now().getEpochSecond();
     long ageSec = now - blockTimestamp;
-    assertThat(ageSec)
-        .as("Latest block should be within 10 minutes of wall clock")
-        .isLessThan(600);
+    assertThat(ageSec).as("Latest block should be within 10 minutes of wall clock").isLessThan(600);
   }
 
   @Test

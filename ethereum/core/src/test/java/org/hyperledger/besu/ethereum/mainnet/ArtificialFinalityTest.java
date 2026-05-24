@@ -97,7 +97,8 @@ public class ArtificialFinalityTest {
 
   @Test
   public void polynomialAtXcapReturnsMaximum() {
-    // At xcap (25132), the polynomial should reach its maximum: DENOMINATOR + HEIGHT = 128 + 3840 = 3968
+    // At xcap (25132), the polynomial should reach its maximum: DENOMINATOR + HEIGHT = 128 + 3840 =
+    // 3968
     BigInteger result = ArtificialFinality.polynomialV(BigInteger.valueOf(25132));
     assertThat(result).isEqualTo(BigInteger.valueOf(3968));
   }
@@ -134,8 +135,7 @@ public class ArtificialFinalityTest {
     // Python reference: 128 + (3 * x**2 - 2 * x**3 // xcap) * height // xcap ** 2
 
     // At x=0: 128 + 0 = 128
-    assertThat(ArtificialFinality.polynomialV(BigInteger.ZERO))
-        .isEqualTo(BigInteger.valueOf(128));
+    assertThat(ArtificialFinality.polynomialV(BigInteger.ZERO)).isEqualTo(BigInteger.valueOf(128));
 
     // At x=12566 (half of xcap): midpoint of the cubic
     BigInteger midResult = ArtificialFinality.polynomialV(BigInteger.valueOf(12566));

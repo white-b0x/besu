@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.eth.sync;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
+import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthMessage;
 import org.hyperledger.besu.ethereum.eth.manager.EthPeer;
@@ -27,8 +28,10 @@ import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.messages.DisconnectMessage;
 import org.hyperledger.besu.ethereum.rlp.RLPException;
 
+import java.math.BigInteger;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -42,10 +45,17 @@ public class BlockRangeBroadcaster {
 
   private final EthContext ethContext;
   private final Blockchain blockchain;
+  private final boolean isPoWChain;
 
   public BlockRangeBroadcaster(final EthContext ethContext, final Blockchain blockchain) {
+    this(ethContext, blockchain, false);
+  }
+
+  public BlockRangeBroadcaster(
+      final EthContext ethContext, final Blockchain blockchain, final boolean isPoWChain) {
     this.ethContext = ethContext;
     this.blockchain = blockchain;
+    this.isPoWChain = isPoWChain;
     ethContext
         .getEthMessages()
         .subscribe(EthProtocolMessages.BLOCK_RANGE_UPDATE, this::handleBlockRangeUpdateMessage);
@@ -79,6 +89,9 @@ public class BlockRangeBroadcaster {
       if (isValid(blockRangeUpdateMessage)) {
         message.getPeer().registerKnownBlock(blockHash);
         message.getPeer().registerBlockRange(blockHash, latestBlockNumber, earliestBlockNumber);
+        if (isPoWChain) {
+          resolveAndUpdatePeerTD(message.getPeer(), blockHash, latestBlockNumber);
+        }
       } else {
         LOG.trace(
             "Invalid block range update message received: earliest={}, latest={}",
@@ -96,6 +109,58 @@ public class BlockRangeBroadcaster {
       handleInvalidMessage(
           message,
           DisconnectMessage.DisconnectReason.BREACH_OF_PROTOCOL_MALFORMED_MESSAGE_RECEIVED);
+    }
+  }
+
+  private void resolveAndUpdatePeerTD(
+      final EthPeer peer, final Hash blockHash, final long latestBlockNumber) {
+    final Difficulty currentTD = peer.chainState().getEstimatedTotalDifficulty();
+    final Difficulty resolvedTD;
+    final String tdSource;
+
+    // Tier 1: exact hash lookup
+    final Optional<Difficulty> byHash = blockchain.getTotalDifficultyByHash(blockHash);
+    if (byHash.isPresent()) {
+      resolvedTD = byHash.get();
+      tdSource = "DB_LOOKUP";
+    } else {
+      // Tier 2: canonical block-number lookup
+      final Optional<Difficulty> byNumber =
+          blockchain
+              .getBlockHeader(latestBlockNumber)
+              .flatMap(h -> blockchain.getTotalDifficultyByHash(h.getHash()));
+      if (byNumber.isPresent()) {
+        resolvedTD = byNumber.get();
+        tdSource = "CANONICAL_NUMBER";
+      } else {
+        // Tier 3: proportional scaling — fallback for peers ahead of our chain head
+        final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
+        final long ourBestNum = blockchain.getChainHeadBlockNumber();
+        if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
+          resolvedTD =
+              Difficulty.of(
+                  ourTD
+                      .getAsBigInteger()
+                      .multiply(BigInteger.valueOf(latestBlockNumber))
+                      .divide(BigInteger.valueOf(ourBestNum)));
+          tdSource = "PROPORTIONAL_SCALING";
+        } else {
+          return;
+        }
+      }
+    }
+
+    if (resolvedTD.greaterThan(currentTD)) {
+      peer.chainState().statusReceived(blockHash, resolvedTD);
+      LOG.atDebug()
+          .setMessage(
+              "ETH69_CHAINWEIGHT_REFRESH: latestBlock={} newTD={} prevTD={} source={} peer={}")
+          .addArgument(latestBlockNumber)
+          .addArgument(resolvedTD)
+          .addArgument(currentTD)
+          .addArgument(tdSource)
+          .addArgument(peer::getLoggableId)
+          .log();
     }
   }
 

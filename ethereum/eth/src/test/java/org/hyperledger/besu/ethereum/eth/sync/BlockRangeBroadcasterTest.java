@@ -15,6 +15,7 @@
 package org.hyperledger.besu.ethereum.eth.sync;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
+import org.hyperledger.besu.ethereum.chain.ChainHead;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.eth.manager.ChainState;
@@ -40,6 +42,7 @@ import org.hyperledger.besu.ethereum.eth.messages.EthProtocolMessages;
 import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.messages.DisconnectMessage;
 
+import java.math.BigInteger;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -61,12 +64,14 @@ public class BlockRangeBroadcasterTest {
   @Mock private EthPeer ethPeerWithoutSupport;
 
   private BlockRangeBroadcaster blockRangeBroadcaster;
+  private BlockRangeBroadcaster powBroadcaster;
 
   @BeforeEach
   public void setup() {
     when(ethContext.getEthMessages()).thenReturn(mock(EthMessages.class));
     when(ethContext.getScheduler()).thenReturn(mock(EthScheduler.class));
     blockRangeBroadcaster = spy(new BlockRangeBroadcaster(ethContext, blockchain));
+    powBroadcaster = new BlockRangeBroadcaster(ethContext, blockchain, true);
   }
 
   @Test
@@ -164,5 +169,94 @@ public class BlockRangeBroadcasterTest {
         BlockRangeUpdateMessage.create(earliestBlockNumber, latestBlockNumber, Hash.ZERO);
     EthMessage ethMessage = new EthMessage(peer, message);
     blockRangeBroadcaster.handleBlockRangeUpdateMessage(ethMessage);
+  }
+
+  // --- PoW ETH69 TD resolution tests ---
+
+  @Test
+  public void handleBlockRangeUpdate_updatesChainWeightViaDbLookup_whenPoWAndHashKnown() {
+    final EthPeer powPeer = mock(EthPeer.class);
+    final ChainState chainState = mock(ChainState.class);
+    when(powPeer.chainState()).thenReturn(chainState);
+    when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
+
+    final Difficulty realTD =
+        Difficulty.of(new BigInteger("24244691155597214264244"));
+    final Hash knownHash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+    when(blockchain.getTotalDifficultyByHash(knownHash)).thenReturn(Optional.of(realTD));
+
+    final BlockRangeUpdateMessage msg = BlockRangeUpdateMessage.create(0L, 24_565_949L, knownHash);
+    powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
+
+    verify(chainState).statusReceived(knownHash, realTD);
+  }
+
+  @Test
+  public void handleBlockRangeUpdate_doesNotResolveChainWeight_whenPoSChain() {
+    final EthPeer peer = mock(EthPeer.class);
+
+    // blockRangeBroadcaster has isPoWChain=false — peer.chainState() must never be accessed
+    final BlockRangeUpdateMessage msg = BlockRangeUpdateMessage.create(0L, 1000L, Hash.ZERO);
+    blockRangeBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(peer, msg));
+
+    verify(peer, never()).chainState();
+  }
+
+  @Test
+  public void handleBlockRangeUpdate_doesNotDowngrade_whenResolvedTdIsLower() {
+    final EthPeer powPeer = mock(EthPeer.class);
+    final ChainState chainState = mock(ChainState.class);
+    when(powPeer.chainState()).thenReturn(chainState);
+
+    final Difficulty highTD = Difficulty.of(new BigInteger("24244691155597214264244"));
+    final Difficulty lowerTD = Difficulty.of(new BigInteger("10000000"));
+    when(chainState.getEstimatedTotalDifficulty()).thenReturn(highTD);
+
+    final Hash hash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+    when(blockchain.getTotalDifficultyByHash(hash)).thenReturn(Optional.of(lowerTD));
+
+    final BlockRangeUpdateMessage msg = BlockRangeUpdateMessage.create(0L, 1000L, hash);
+    powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
+
+    verify(chainState, never()).statusReceived(any(Hash.class), any(Difficulty.class));
+  }
+
+  @Test
+  public void handleBlockRangeUpdate_usesProportionalScaling_whenHashAndNumberMiss() {
+    final EthPeer powPeer = mock(EthPeer.class);
+    final ChainState chainState = mock(ChainState.class);
+    when(powPeer.chainState()).thenReturn(chainState);
+    when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
+
+    final Difficulty ourTD = Difficulty.of(new BigInteger("24244691155597214264244"));
+    final long ourBestNum = 24_565_949L;
+    final long peerBlockNum = 24_566_100L;
+    final Hash unknownHash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0xabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd"));
+
+    // Build ChainHead before entering any when() context to avoid nested-mock issues
+    final BlockHeader headHeader = mock(BlockHeader.class);
+    when(headHeader.getHash()).thenReturn(Hash.ZERO);
+    final ChainHead ourChainHead = new ChainHead(headHeader, ourTD, ourBestNum);
+
+    // Tier 1 and Tier 2 both miss → Tier 3 (proportional scaling) fires
+    when(blockchain.getTotalDifficultyByHash(any())).thenReturn(Optional.empty());
+    when(blockchain.getBlockHeader(peerBlockNum)).thenReturn(Optional.empty());
+    when(blockchain.getChainHead()).thenReturn(ourChainHead);
+    when(blockchain.getChainHeadBlockNumber()).thenReturn(ourBestNum);
+
+    final BlockRangeUpdateMessage msg =
+        BlockRangeUpdateMessage.create(0L, peerBlockNum, unknownHash);
+    powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
+
+    verify(chainState).statusReceived(eq(unknownHash), any(Difficulty.class));
   }
 }

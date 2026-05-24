@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
  * Deep ETChash algorithm tests covering ECIP-1099 epoch doubling, DAG seed uniqueness, cache and
  * dataset size calculations, and boundary conditions.
  *
- * <p>Extends the basic tests in EtcHashTest (4 tests) and EthHashTest (3 tests) with
- * comprehensive coverage matching the core-geth and fukuii test suites.
+ * <p>Extends the basic tests in EtcHashTest (4 tests) and EthHashTest (3 tests) with comprehensive
+ * coverage matching the core-geth and fukuii test suites.
  */
 public class EtcHashDeepTest {
 

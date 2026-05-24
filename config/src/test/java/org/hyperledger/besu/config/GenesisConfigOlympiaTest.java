@@ -20,12 +20,11 @@ import org.hyperledger.besu.datatypes.Address;
 
 import java.util.OptionalLong;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests that Olympia hard fork config options are correctly parsed from genesis files
- * and properly handled by StubGenesisConfigOptions.
+ * Tests that Olympia hard fork config options are correctly parsed from genesis files and properly
+ * handled by StubGenesisConfigOptions.
  */
 public class GenesisConfigOlympiaTest {
 
@@ -44,8 +43,7 @@ public class GenesisConfigOlympiaTest {
 
   @Test
   public void mordorOlympiaBlockNumber() {
-    assertThat(loadMordorConfig().getOlympiaBlockNumber())
-        .isEqualTo(OptionalLong.of(15_800_850L));
+    assertThat(loadMordorConfig().getOlympiaBlockNumber()).isEqualTo(OptionalLong.of(15_800_850L));
   }
 
   @Test
@@ -59,8 +57,7 @@ public class GenesisConfigOlympiaTest {
 
   @Test
   public void classicOlympiaBlockNumber() {
-    assertThat(loadClassicConfig().getOlympiaBlockNumber())
-        .isEqualTo(OptionalLong.of(24_751_337L));
+    assertThat(loadClassicConfig().getOlympiaBlockNumber()).isEqualTo(OptionalLong.of(24_751_337L));
   }
 
   @Test
@@ -89,8 +86,7 @@ public class GenesisConfigOlympiaTest {
 
   @Test
   public void olympiaInForkBlockNumbers() {
-    assertThat(loadMordorConfig().getForkBlockNumbers())
-        .contains(15_800_850L);
+    assertThat(loadMordorConfig().getForkBlockNumbers()).contains(15_800_850L);
   }
 
   // --- StubGenesisConfigOptions ---
@@ -106,9 +102,7 @@ public class GenesisConfigOlympiaTest {
   public void stubConfigOlympiaTreasuryAddress() {
     StubGenesisConfigOptions stub = new StubGenesisConfigOptions();
     stub.olympiaTreasuryAddress(EXPECTED_TREASURY);
-    assertThat(stub.getOlympiaTreasuryAddress())
-        .isPresent()
-        .hasValue(EXPECTED_TREASURY);
+    assertThat(stub.getOlympiaTreasuryAddress()).isPresent().hasValue(EXPECTED_TREASURY);
   }
 
   @Test
@@ -127,7 +121,8 @@ public class GenesisConfigOlympiaTest {
   public void mordorAllocContainsEip2935Contract() {
     GenesisConfig genesis = GenesisConfig.fromResource("/mordor.json");
     boolean found =
-        genesis.streamAllocations()
+        genesis
+            .streamAllocations()
             .anyMatch(
                 account ->
                     account.address().equals(HISTORY_STORAGE_ADDRESS)
@@ -143,7 +138,8 @@ public class GenesisConfigOlympiaTest {
   public void classicAllocContainsEip2935Contract() {
     GenesisConfig genesis = GenesisConfig.fromResource("/classic.json");
     boolean found =
-        genesis.streamAllocations()
+        genesis
+            .streamAllocations()
             .anyMatch(
                 account ->
                     account.address().equals(HISTORY_STORAGE_ADDRESS)

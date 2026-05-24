@@ -32,9 +32,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Deep protocol schedule validation for ETC Classic forks. Complements ClassicProtocolSpecsTest
- * (18 tests) with EVM version progression, transaction type restrictions, and cross-fork
- * consistency checks.
+ * Deep protocol schedule validation for ETC Classic forks. Complements ClassicProtocolSpecsTest (18
+ * tests) with EVM version progression, transaction type restrictions, and cross-fork consistency
+ * checks.
  */
 public class ClassicProtocolScheduleDeepTest {
 
@@ -145,8 +145,17 @@ public class ClassicProtocolScheduleDeepTest {
   @Test
   public void noEip1559PreOlympia() {
     long[] allForks = {
-      CLASSIC_FORK, DIE_HARD, GOTHAM, DEFUSE, ATLANTIS, AGHARTA, PHOENIX, THANOS, MAGNETO,
-      MYSTIQUE, SPIRAL
+      CLASSIC_FORK,
+      DIE_HARD,
+      GOTHAM,
+      DEFUSE,
+      ATLANTIS,
+      AGHARTA,
+      PHOENIX,
+      THANOS,
+      MAGNETO,
+      MYSTIQUE,
+      SPIRAL
     };
     for (long block : allForks) {
       assertThat(specAt(block).getFeeMarket().implementsBaseFee())
@@ -160,8 +169,17 @@ public class ClassicProtocolScheduleDeepTest {
   @Test
   public void noWithdrawalsAnyFork() {
     long[] allForks = {
-      CLASSIC_FORK, DIE_HARD, GOTHAM, DEFUSE, ATLANTIS, AGHARTA, PHOENIX, THANOS, MAGNETO,
-      MYSTIQUE, SPIRAL
+      CLASSIC_FORK,
+      DIE_HARD,
+      GOTHAM,
+      DEFUSE,
+      ATLANTIS,
+      AGHARTA,
+      PHOENIX,
+      THANOS,
+      MAGNETO,
+      MYSTIQUE,
+      SPIRAL
     };
     for (long block : allForks) {
       assertThat(specAt(block).getWithdrawalsProcessor())
@@ -199,8 +217,17 @@ public class ClassicProtocolScheduleDeepTest {
   @Test
   public void evmVersionNeverExceedsShanghaiPreOlympia() {
     long[] allForks = {
-      CLASSIC_FORK, DIE_HARD, GOTHAM, DEFUSE, ATLANTIS, AGHARTA, PHOENIX, THANOS, MAGNETO,
-      MYSTIQUE, SPIRAL
+      CLASSIC_FORK,
+      DIE_HARD,
+      GOTHAM,
+      DEFUSE,
+      ATLANTIS,
+      AGHARTA,
+      PHOENIX,
+      THANOS,
+      MAGNETO,
+      MYSTIQUE,
+      SPIRAL
     };
     for (long block : allForks) {
       EvmSpecVersion version = specAt(block).getEvm().getEvmVersion();

@@ -29,9 +29,8 @@ import org.junit.jupiter.api.Test;
  * Tests for the four ETC Classic difficulty calculators.
  *
  * <p>DIFFICULTY_BOMB_PAUSED — DieHard fork (block 3M), freezes bomb at period 30
- * DIFFICULTY_BOMB_DELAYED — Gotham fork, resumes bomb with 20-period delay
- * DIFFICULTY_BOMB_REMOVED — Defuse fork, no bomb at all
- * EIP100 — Atlantis+ (Byzantium-style, uncle-aware adjustment)
+ * DIFFICULTY_BOMB_DELAYED — Gotham fork, resumes bomb with 20-period delay DIFFICULTY_BOMB_REMOVED
+ * — Defuse fork, no bomb at all EIP100 — Atlantis+ (Byzantium-style, uncle-aware adjustment)
  */
 public class ClassicDifficultyCalculatorsTest {
 
@@ -65,7 +64,8 @@ public class ClassicDifficultyCalculatorsTest {
     // Block created 5 seconds after parent (fast, should increase difficulty)
     BlockHeader parent = createParent(3_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_005L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -77,7 +77,8 @@ public class ClassicDifficultyCalculatorsTest {
     // Need parent > 2^28 * 2048/99 ≈ 5.55B to see net decrease.
     BlockHeader parent = createParent(3_000_001L, 1_000_000L, BigInteger.valueOf(50_000_000_000L));
     long time = 1_001_000L; // 1000s gap
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
     assertThat(difficulty).isLessThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -85,7 +86,8 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombPausedNeverBelowMinimum() {
     BlockHeader parent = createParent(3_000_001L, 1_000_000L, MINIMUM_DIFFICULTY);
     long time = 1_001_000L; // Very slow block
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThanOrEqualTo(MINIMUM_DIFFICULTY);
   }
 
@@ -95,7 +97,8 @@ public class ClassicDifficultyCalculatorsTest {
     // So bomb contribution = 2^(30-2) = 2^28 = 268435456
     BlockHeader parent = createParent(3_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_010L; // ~10 seconds
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_PAUSED.nextDifficulty(time, parent);
     // Should include the fixed bomb component
     assertThat(difficulty).isGreaterThan(BigInteger.ZERO);
   }
@@ -106,7 +109,8 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombDelayedIncreasesOnFastBlock() {
     BlockHeader parent = createParent(5_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_005L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -116,7 +120,8 @@ public class ClassicDifficultyCalculatorsTest {
     // Bomb contribution = 2^28 = 268,435,456 (same as paused at 3M)
     BlockHeader parent = createParent(5_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_010L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -124,11 +129,15 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombDelayedGrowsAtHigherBlocks() {
     // At block 8,000,001: periodCount = 80, exponent = 80 - 20 - 2 = 58
     // Bomb contribution = 2^58 (much larger than at 5M where bomb = 2^28)
-    BlockHeader parentLow = createParent(5_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
-    BlockHeader parentHigh = createParent(8_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
+    BlockHeader parentLow =
+        createParent(5_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
+    BlockHeader parentHigh =
+        createParent(8_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_010L;
-    BigInteger diffAtGotham = ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parentLow);
-    BigInteger diffAtHigher = ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parentHigh);
+    BigInteger diffAtGotham =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parentLow);
+    BigInteger diffAtHigher =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_DELAYED.nextDifficulty(time, parentHigh);
     assertThat(diffAtHigher).isGreaterThan(diffAtGotham);
   }
 
@@ -138,7 +147,8 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombRemovedIncreasesOnFastBlock() {
     BlockHeader parent = createParent(10_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_005L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -146,7 +156,8 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombRemovedDecreasesOnSlowBlock() {
     BlockHeader parent = createParent(10_000_001L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_030L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
     assertThat(difficulty).isLessThan(parent.getDifficulty().getAsBigInteger());
   }
 
@@ -154,7 +165,8 @@ public class ClassicDifficultyCalculatorsTest {
   public void bombRemovedNeverBelowMinimum() {
     BlockHeader parent = createParent(10_000_001L, 1_000_000L, MINIMUM_DIFFICULTY);
     long time = 1_001_000L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
     assertThat(difficulty).isGreaterThanOrEqualTo(MINIMUM_DIFFICULTY);
   }
 
@@ -163,7 +175,8 @@ public class ClassicDifficultyCalculatorsTest {
     // Verify no exponential explosion at high block numbers (bomb is completely removed)
     BlockHeader parent = createParent(100_000_000L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_010L;
-    BigInteger difficulty = ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
+    BigInteger difficulty =
+        ClassicDifficultyCalculators.DIFFICULTY_BOMB_REMOVED.nextDifficulty(time, parent);
     // Should be close to parent difficulty (no bomb, ~10s target)
     BigInteger parentDiff = parent.getDifficulty().getAsBigInteger();
     BigInteger maxReasonable = parentDiff.multiply(BigInteger.TWO);
@@ -192,12 +205,16 @@ public class ClassicDifficultyCalculatorsTest {
   public void eip100HigherDifficultyWhenOmmersPresent() {
     // EIP-100: when ommers are present, difficulty adjustment is more aggressive
     // y = (2 - timeDelta/9) vs (1 - timeDelta/9)
-    BlockHeader parentNoOmmers = createParent(12_000_000L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
-    BlockHeader parentWithOmmers = createParentWithOmmers(12_000_000L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
+    BlockHeader parentNoOmmers =
+        createParent(12_000_000L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
+    BlockHeader parentWithOmmers =
+        createParentWithOmmers(12_000_000L, 1_000_000L, BigInteger.valueOf(1_000_000_000L));
     long time = 1_000_010L;
 
-    BigInteger diffNoOmmers = ClassicDifficultyCalculators.EIP100.nextDifficulty(time, parentNoOmmers);
-    BigInteger diffWithOmmers = ClassicDifficultyCalculators.EIP100.nextDifficulty(time, parentWithOmmers);
+    BigInteger diffNoOmmers =
+        ClassicDifficultyCalculators.EIP100.nextDifficulty(time, parentNoOmmers);
+    BigInteger diffWithOmmers =
+        ClassicDifficultyCalculators.EIP100.nextDifficulty(time, parentWithOmmers);
 
     // With ommers, target is faster so difficulty should be higher
     assertThat(diffWithOmmers).isGreaterThan(diffNoOmmers);

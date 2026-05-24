@@ -36,8 +36,8 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.MainnetBlockValidatorBuilder;
+import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.feemarket.CoinbaseFeePriceCalculator;
 import org.hyperledger.besu.ethereum.mainnet.blockhash.OlympiaPreExecutionProcessor;
@@ -60,9 +60,8 @@ import org.hyperledger.besu.evm.gascalculator.BerlinGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.DieHardGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.IstanbulGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
-import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.OsakaGasCalculator;
-import org.hyperledger.besu.evm.gascalculator.PragueGasCalculator;
+import org.hyperledger.besu.evm.gascalculator.PetersburgGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.ShanghaiGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.SpuriousDragonGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.TangerineWhistleGasCalculator;
@@ -465,8 +464,7 @@ public class ClassicProtocolSpecs {
                 false,
                 miningConfiguration.getMinTransactionGasPrice(),
                 (blobSchedule) ->
-                    FeeMarket.london(
-                        olympiaBlockNumber, genesisConfigOptions.getBaseFeePerGas())))
+                    FeeMarket.london(olympiaBlockNumber, genesisConfigOptions.getBaseFeePerGas())))
         // ECIP-1111: EIP-1559 elastic block gas limit + EIP-7825: 30M per-TX gas cap
         .gasLimitCalculatorBuilder(
             (feeMarket, gasCalculator, blobSchedule) ->
@@ -564,9 +562,11 @@ public class ClassicProtocolSpecs {
             new GasLimitRangeAndDeltaValidationRule(
                 5000, Long.MAX_VALUE, Optional.of(baseFeeMarket)))
         .addRule(
-            new TimestampMoreRecentThanParent(MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
+            new TimestampMoreRecentThanParent(
+                MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
         .addRule(
-            new TimestampBoundedByFutureParameter(MainnetBlockHeaderValidator.TIMESTAMP_TOLERANCE_S))
+            new TimestampBoundedByFutureParameter(
+                MainnetBlockHeaderValidator.TIMESTAMP_TOLERANCE_S))
         .addRule(new ExtraDataMaxLengthValidationRule(BlockHeader.MAX_EXTRA_DATA_BYTES))
         .addRule(new BaseFeeMarketBlockHeaderGasPriceValidationRule(baseFeeMarket))
         .addRule(
@@ -586,7 +586,8 @@ public class ClassicProtocolSpecs {
             new GasLimitRangeAndDeltaValidationRule(
                 5000, Long.MAX_VALUE, Optional.of(baseFeeMarket)))
         .addRule(
-            new TimestampMoreRecentThanParent(MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
+            new TimestampMoreRecentThanParent(
+                MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
         .addRule(new ExtraDataMaxLengthValidationRule(BlockHeader.MAX_EXTRA_DATA_BYTES))
         .addRule(
             new ProofOfWorkValidationRule(

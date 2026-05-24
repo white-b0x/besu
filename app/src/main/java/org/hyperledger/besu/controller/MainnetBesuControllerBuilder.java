@@ -87,8 +87,8 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
   }
 
   /**
-   * If ECBP-1100 (MESS) is configured, wrap the default block choice rule with one that applies
-   * the MESS antigravity check before allowing reorgs.
+   * If ECBP-1100 (MESS) is configured, wrap the default block choice rule with one that applies the
+   * MESS antigravity check before allowing reorgs.
    */
   private void setupMessBlockChoiceRule(final Blockchain blockchain) {
     final OptionalLong activationBlock = genesisConfigOptions.getEcbp1100Block();
@@ -133,24 +133,20 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
 
     // Equalize heights
     while (oldH.getNumber() > newH.getNumber()) {
-      final Optional<BlockHeader> parent =
-          blockchain.getBlockHeader(oldH.getParentHash());
+      final Optional<BlockHeader> parent = blockchain.getBlockHeader(oldH.getParentHash());
       if (parent.isEmpty()) return baseResult;
       oldH = parent.get();
     }
     while (newH.getNumber() > oldH.getNumber()) {
-      final Optional<BlockHeader> parent =
-          blockchain.getBlockHeader(newH.getParentHash());
+      final Optional<BlockHeader> parent = blockchain.getBlockHeader(newH.getParentHash());
       if (parent.isEmpty()) return baseResult;
       newH = parent.get();
     }
 
     // Find common ancestor
     while (!oldH.getHash().equals(newH.getHash())) {
-      final Optional<BlockHeader> oldParent =
-          blockchain.getBlockHeader(oldH.getParentHash());
-      final Optional<BlockHeader> newParent =
-          blockchain.getBlockHeader(newH.getParentHash());
+      final Optional<BlockHeader> oldParent = blockchain.getBlockHeader(oldH.getParentHash());
+      final Optional<BlockHeader> newParent = blockchain.getBlockHeader(newH.getParentHash());
       if (oldParent.isEmpty() || newParent.isEmpty()) return baseResult;
       oldH = oldParent.get();
       newH = newParent.get();
@@ -170,8 +166,7 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
     }
 
     final Difficulty localSubchainTD =
-        Difficulty.of(
-            localTD.get().toBigInteger().subtract(commonAncestorTD.get().toBigInteger()));
+        Difficulty.of(localTD.get().toBigInteger().subtract(commonAncestorTD.get().toBigInteger()));
     final Difficulty proposedSubchainTD =
         Difficulty.of(
             proposedTD.get().toBigInteger().subtract(commonAncestorTD.get().toBigInteger()));

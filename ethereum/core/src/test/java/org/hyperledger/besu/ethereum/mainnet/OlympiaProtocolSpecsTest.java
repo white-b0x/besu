@@ -38,8 +38,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests that the Olympia protocol spec (ECIP-1111 + ECIP-1121) is correctly wired.
- * Validates fork ID, gas calculator, fee market, block processor type, and precompiles.
+ * Tests that the Olympia protocol spec (ECIP-1111 + ECIP-1121) is correctly wired. Validates fork
+ * ID, gas calculator, fee market, block processor type, and precompiles.
  */
 public class OlympiaProtocolSpecsTest {
 
@@ -113,35 +113,30 @@ public class OlympiaProtocolSpecsTest {
 
   @Test
   public void olympiaUsesOsakaGasCalculator() {
-    assertThat(specAt(OLYMPIA_BLOCK).getGasCalculator())
-        .isInstanceOf(OsakaGasCalculator.class);
+    assertThat(specAt(OLYMPIA_BLOCK).getGasCalculator()).isInstanceOf(OsakaGasCalculator.class);
   }
 
   @Test
   public void spiralStillUsesShanghaiGasCalculator() {
-    assertThat(specAt(SPIRAL_BLOCK).getGasCalculator())
-        .isInstanceOf(ShanghaiGasCalculator.class);
+    assertThat(specAt(SPIRAL_BLOCK).getGasCalculator()).isInstanceOf(ShanghaiGasCalculator.class);
   }
 
   // --- Block processor type ---
 
   @Test
   public void olympiaUsesOlympiaBlockProcessor() {
-    assertThat(specAt(OLYMPIA_BLOCK).getBlockProcessor())
-        .isInstanceOf(OlympiaBlockProcessor.class);
+    assertThat(specAt(OLYMPIA_BLOCK).getBlockProcessor()).isInstanceOf(OlympiaBlockProcessor.class);
   }
 
   @Test
   public void spiralUsesClassicBlockProcessor() {
-    assertThat(specAt(SPIRAL_BLOCK).getBlockProcessor())
-        .isInstanceOf(ClassicBlockProcessor.class);
+    assertThat(specAt(SPIRAL_BLOCK).getBlockProcessor()).isInstanceOf(ClassicBlockProcessor.class);
   }
 
   @Test
   public void olympiaBlockProcessorIsAlsoClassicBlockProcessor() {
     // OlympiaBlockProcessor extends ClassicBlockProcessor
-    assertThat(specAt(OLYMPIA_BLOCK).getBlockProcessor())
-        .isInstanceOf(ClassicBlockProcessor.class);
+    assertThat(specAt(OLYMPIA_BLOCK).getBlockProcessor()).isInstanceOf(ClassicBlockProcessor.class);
   }
 
   // --- Fee market ---
@@ -165,9 +160,9 @@ public class OlympiaProtocolSpecsTest {
   @Test
   public void allPreOlympiaForksUseLegacyFeeMarket() {
     long[] forkBlocks = {
-        3_000_000L, 5_000_000L, 5_900_000L, 8_772_000L,
-        9_573_000L, 10_500_839L, 11_700_000L, 13_189_133L,
-        14_525_000L, SPIRAL_BLOCK
+      3_000_000L, 5_000_000L, 5_900_000L, 8_772_000L,
+      9_573_000L, 10_500_839L, 11_700_000L, 13_189_133L,
+      14_525_000L, SPIRAL_BLOCK
     };
     for (long block : forkBlocks) {
       assertThat(specAt(block).getFeeMarket().implementsBaseFee())

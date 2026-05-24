@@ -20,8 +20,8 @@ import org.hyperledger.besu.ethereum.mainnet.feemarket.BaseFeeMarket;
  * Gas limit calculator for ETC Olympia hard fork. Extends the London EIP-1559 elastic block gas
  * limit calculator with a per-transaction gas cap of 2^24 (EIP-7825).
  *
- * <p>The transaction gas limit cap is enforced by {@link MainnetTransactionValidator#validate} which
- * checks {@code transaction.getGasLimit() > gasLimitCalculator.transactionGasLimitCap()}.
+ * <p>The transaction gas limit cap is enforced by {@link MainnetTransactionValidator#validate}
+ * which checks {@code transaction.getGasLimit() > gasLimitCalculator.transactionGasLimitCap()}.
  */
 public class OlympiaTargetingGasLimitCalculator extends LondonTargetingGasLimitCalculator {
 

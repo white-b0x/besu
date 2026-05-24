@@ -90,15 +90,15 @@ public final class LiveTestConstants {
       throws IOException {
     EthBlock response =
         web3j
-            .ethGetBlockByNumber(DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber)), false)
+            .ethGetBlockByNumber(
+                DefaultBlockParameter.valueOf(BigInteger.valueOf(blockNumber)), false)
             .send();
     return response.getBlock();
   }
 
   /** Fetch the latest block. */
   public static EthBlock.Block getLatestBlock(final Web3j web3j) throws IOException {
-    EthBlock response =
-        web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false).send();
+    EthBlock response = web3j.ethGetBlockByNumber(DefaultBlockParameterName.LATEST, false).send();
     return response.getBlock();
   }
 }
