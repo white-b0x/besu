@@ -407,7 +407,9 @@ configure(allprojects - project(':platform')) {
         systemProperty name, System.getProperty(name)
       }
     }
-    useJUnitPlatform {}
+    useJUnitPlatform {
+      excludeTags 'live'
+    }
     finalizedBy jacocoTestReport // report is always generated after tests run
   }
 
