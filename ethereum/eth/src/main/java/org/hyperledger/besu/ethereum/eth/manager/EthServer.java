@@ -85,6 +85,7 @@ class EthServer {
         (peer, messageData, capability) ->
             constructGetHeadersResponse(
                 blockchain,
+                peer,
                 messageData,
                 ethereumWireProtocolConfiguration.getMaxGetBlockHeaders(),
                 maxMessageSize));
@@ -135,6 +136,7 @@ class EthServer {
 
   static MessageData constructGetHeadersResponse(
       final Blockchain blockchain,
+      final EthPeer peer,
       final MessageData message,
       final int requestLimit,
       final int maxMessageSize) {
@@ -144,6 +146,14 @@ class EthServer {
     final int skip = getHeaders.skip();
     final int maxHeaders = Math.min(requestLimit, getHeaders.maxHeaders());
     final boolean reversed = getHeaders.reverse();
+    LOG.atDebug()
+        .setMessage("GetBlockHeaders request: peer={} start={} maxHeaders={} skip={} reverse={}")
+        .addArgument(peer::getLoggableId)
+        .addArgument(() -> hash.isPresent() ? hash.get() : getHeaders.blockNumber().getAsLong())
+        .addArgument(maxHeaders)
+        .addArgument(skip)
+        .addArgument(reversed)
+        .log();
     final BlockHeader firstHeader;
     // Query first header by hash or number depending on request arguments
     if (hash.isPresent()) {
@@ -169,6 +179,7 @@ class EthServer {
     }
     responseSizeEstimate += firstEncodedHeader.size();
     rlp.writeRaw(firstEncodedHeader);
+    int headerCount = 1;
     // Collect and encode the remaining headers
     final long numberDelta = reversed ? -(skip + 1) : (skip + 1);
     for (int i = 1; i < maxHeaders; i++) {
@@ -188,9 +199,16 @@ class EthServer {
       }
       responseSizeEstimate += encodedSize;
       rlp.writeRaw(headerRlp.encoded());
+      headerCount++;
     }
     rlp.endList();
 
+    LOG.atDebug()
+        .setMessage("GetBlockHeaders served: peer={} start={} returned={}")
+        .addArgument(peer::getLoggableId)
+        .addArgument(() -> hash.isPresent() ? hash.get() : getHeaders.blockNumber().getAsLong())
+        .addArgument(headerCount)
+        .log();
     return BlockHeadersMessage.createUnsafe(rlp.encoded());
   }
 

@@ -596,6 +596,16 @@ public class EthPeers implements PeerSelector {
                     "Failed to retrieve chain head from {}. Adding peer with unknown height.")
                 .addArgument(peer::getLoggableId)
                 .log();
+            if (peer.getConnection().isDisconnected()) {
+              // The primary connection may have been closed during duplicate-connection resolution
+              // (e.g., the remote peer dropped our outbound connection). Promote any live alternate
+              // connection from incompleteConnections so the peer can still be admitted.
+              incompleteConnections.asMap().entrySet().stream()
+                  .filter(e -> e.getValue() == peer && !e.getKey().isDisconnected())
+                  .map(Map.Entry::getKey)
+                  .findFirst()
+                  .ifPresent(peer::refreshConnectionIfDisconnected);
+            }
             if (!peer.getConnection().isDisconnected() && addPeerToEthPeers(peer)) {
               connectedPeersCounter.inc();
               connectCallbacks.forEach(cb -> cb.onPeerConnected(peer));
@@ -655,8 +665,6 @@ public class EthPeers implements PeerSelector {
     if (peer.getAgreedCapabilities().contains(SnapProtocol.SNAP1)
         || peer.getAgreedCapabilities().contains(SnapProtocol.SNAP2)) {
       if (snapServerChecker != null) {
-        // set that peer is a snap server for doing the test
-        peer.setIsServingSnap(true);
         Boolean isServer;
         try {
           isServer = snapServerChecker.check(peer, peersHeadBlockHeader).get(6L, TimeUnit.SECONDS);
