@@ -39,8 +39,7 @@ import org.junit.jupiter.api.Test;
 public class OlympiaBlockProcessorTest {
 
   private static final Wei BLOCK_REWARD = Wei.fromEth(5);
-  private static final Address TREASURY =
-      Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2");
+  private static final Address TREASURY = OlympiaTestConstants.TREASURY;
   private static final Address COINBASE =
       Address.fromHexString("0x1000000000000000000000000000000000000001");
 

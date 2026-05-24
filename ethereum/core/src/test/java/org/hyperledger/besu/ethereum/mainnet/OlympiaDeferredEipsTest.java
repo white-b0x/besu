@@ -48,8 +48,7 @@ public class OlympiaDeferredEipsTest {
   private static final BigInteger CHAIN_ID = BigInteger.valueOf(61);
   private static final long SPIRAL_BLOCK = 19_250_000L;
   private static final long OLYMPIA_BLOCK = 24_751_337L;
-  private static final Address TREASURY =
-      Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2");
+  private static final Address TREASURY = OlympiaTestConstants.TREASURY;
   private static final Address HISTORY_STORAGE_ADDRESS =
       Address.fromHexString("0x0000f90827f1c53a10cb7a02335b175320002935");
 

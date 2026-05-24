@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 public class GenesisConfigOlympiaTest {
 
   private static final Address EXPECTED_TREASURY =
-      Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2");
+      Address.fromHexString("0x035b2e3c189B772e52F4C3DA6c45c84A3bB871bf");
 
   private GenesisConfigOptions loadMordorConfig() {
     return GenesisConfig.fromResource("/mordor.json").getConfigOptions();

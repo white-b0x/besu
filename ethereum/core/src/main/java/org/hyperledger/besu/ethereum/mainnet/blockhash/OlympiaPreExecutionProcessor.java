@@ -16,11 +16,11 @@ package org.hyperledger.besu.ethereum.mainnet.blockhash;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
-import org.hyperledger.besu.ethereum.core.MutableWorldState;
+import org.hyperledger.besu.plugin.services.worldstate.MutableWorldState;
 import org.hyperledger.besu.ethereum.core.ProcessableBlockHeader;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.AccessLocationTracker;
 import org.hyperledger.besu.ethereum.mainnet.systemcall.BlockProcessingContext;
-import org.hyperledger.besu.ethereum.mainnet.systemcall.InvalidSystemCallAddressException;
+import org.hyperledger.besu.ethereum.mainnet.systemcall.SystemCallNoCodeAtAddressException;
 import org.hyperledger.besu.ethereum.mainnet.systemcall.SystemCallProcessor;
 import org.hyperledger.besu.ethereum.vm.Eip7709BlockHashLookup;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -93,7 +93,7 @@ public class OlympiaPreExecutionProcessor extends FrontierPreExecutionProcessor 
     final Bytes inputData = context.getBlockHeader().getParentHash().getBytes();
     try {
       processor.process(historyStorageAddress, context, inputData, accessLocationTracker);
-    } catch (final InvalidSystemCallAddressException e) {
+    } catch (final SystemCallNoCodeAtAddressException e) {
       LOG.warn("EIP-2935: invalid system call address: {}", historyStorageAddress);
     }
     return null;

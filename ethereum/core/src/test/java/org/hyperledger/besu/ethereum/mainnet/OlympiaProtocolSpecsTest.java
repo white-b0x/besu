@@ -46,8 +46,7 @@ public class OlympiaProtocolSpecsTest {
   private static final BigInteger CHAIN_ID = BigInteger.valueOf(61);
   private static final long SPIRAL_BLOCK = 19_250_000L;
   private static final long OLYMPIA_BLOCK = 24_751_337L;
-  private static final Address TREASURY =
-      Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2");
+  private static final Address TREASURY = OlympiaTestConstants.TREASURY;
 
   private StubGenesisConfigOptions config;
   private ProtocolSchedule schedule;

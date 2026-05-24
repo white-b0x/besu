@@ -10,6 +10,9 @@
 # Claude Code internal files (local-only workspace)
 .claude/
 
+# Local dev workspace (scripts, planning files, notes)
+local/
+
 # Secrets & credentials
 .env
 .env.*

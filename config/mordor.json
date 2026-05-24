@@ -9,6 +9,8 @@
     "magnetoBlock": 3985893,
     "mystiqueBlock": 5520000,
     "spiralBlock": 9957000,
+    "olympiaBlock": 1000000000000000000,
+    "olympiaTreasuryAddress": "0xd6165F3aF4281037bce810621F62B43077Fb0e37",
     "ecbp1100Block": 2380000,
     "ecbp1100DeactivateBlock": 10400000,
     "ethash": {},

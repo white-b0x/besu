@@ -426,7 +426,8 @@ This will be removed from the ECIP-1121 draft before finalization. It is NOT a m
 - EIP-2935: Block hashes in state | EIP-7702: EOA code delegation
 - EIP-7934: Block size limit
 
-**Treasury:** `0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2`
+**Treasury (demo v0.2):** `0x035b2e3c189B772e52F4C3DA6c45c84A3bB871bf` — Pre-Olympia EVM (Shanghai). Pure Solidity, no OpenZeppelin. Deployed on Mordor + ETC mainnet. Production deployment TBD (OZ 5.6 post-Olympia).
+**Executor:** `0x64624f74F77639CbA268a6c8bEDC2778B707eF9a` (CREATE2, deterministic factory)
 
 ---
 
@@ -590,4 +591,4 @@ This methodology ensures implementation parity across all ETC clients and consis
 - core-geth: `/media/dev/2tb/dev/core-geth/` (branch `olympia`, 25 commits)
 - Fukuii: `/media/dev/2tb/dev/fukuii/fukuii-client/` (branch `olympia`)
 - ECIPs: `/media/dev/2tb/dev/ECIPs/_specs/`
-- Treasury contract: `/media/dev/2tb/dev/olympia-treasury-contract/` (deployed on Mordor at `0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2`)
+- Treasury contract: `/media/dev/2tb/dev/olympiadao/olympia-treasury-contract/` (branch `demo_v0.2`, deployed on Mordor + ETC mainnet at `0x035b2e3c189B772e52F4C3DA6c45c84A3bB871bf`)

@@ -51,6 +51,9 @@ import picocli.CommandLine.ParameterException;
 /** The Mining CLI options. */
 public class MiningOptions implements CLIOptions<MiningConfiguration> {
 
+  private static final String DEPRECATION_PREFIX =
+      "Deprecated. This option has no effect and will be removed in a future release. ";
+
   @Option(
       names = {"--miner-enabled"},
       description = "Set if node will perform mining (default: ${DEFAULT-VALUE})")

@@ -75,8 +75,7 @@ public class ClassicProtocolSpecsTest {
     config.mystique(14_525_000L);
     config.spiral(19_250_000L);
     config.olympia(24_751_337L);
-    config.olympiaTreasuryAddress(
-        Address.fromHexString("0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2"));
+    config.olympiaTreasuryAddress(OlympiaTestConstants.TREASURY);
 
     ProtocolScheduleBuilder builder =
         new ProtocolScheduleBuilder(
