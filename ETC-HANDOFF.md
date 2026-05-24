@@ -377,10 +377,6 @@ EIP-7642 (`eth/69`) removes total difficulty (TD) from the `Status` handshake me
 
 This will be removed from the ECIP-1121 draft before finalization. It is NOT a missing implementation.
 
-### Treasury Address
-
-The Mordor treasury address `0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2` is a development placeholder in Chris Mercer's branches. Once merged into the official `ethereumclassic` organization, the address will be updated through proper coordination with the core development team.
-
 ### Multi-Client Reference
 
 | Client | Pre-Olympia Branch | Olympia Branch | Repository |
@@ -393,18 +389,4 @@ The Mordor treasury address `0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2` is a de
 
 ## Next Steps: Olympia Branch
 
-The `olympia` branch extends `etc` with 14 EIPs + ECIP-1111 treasury for the Olympia hard fork.
-
-### Activation Timeline
-
-| Network | Block | Estimated Date |
-|---------|-------|---------------|
-| Mordor testnet | 15,800,850 | ~March 28, 2026 |
-| ETC mainnet | ~24,751,337 | ~mid-June 2026 |
-
-### Reference Implementations
-
-- core-geth: `chris-mercer/core-geth` branch `olympia`
-- Fukuii: `chris-mercer/fukuii` branch `olympia`
-- ECIPs: ECIP-1111 (treasury), ECIP-1112 (treasury contract), ECIP-1121 (EVM modernization)
-- Treasury contract: deployed on Mordor at `0xCfE1e0ECbff745e6c800fF980178a8dDEf94bEe2`
+The `olympia` branch extends `etc` with 14 EIPs + ECIP-1111 treasury for the Olympia hard fork. See the `olympia` branch for Olympia-specific implementation details, treasury address, and activation timeline.

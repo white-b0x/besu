@@ -307,6 +307,24 @@ class ProtocolScheduleBuilderTest {
   }
 
   @Test
+  void createProtocolScheduleWithClassicForksAfterMainnetDoesNotThrow() {
+    // Classic milestones are appended after mainnet milestones in the definitions list.
+    // Classic block-number forks (e.g. DEFUSE_DIFFICULTY_BOMB=15) can be numerically
+    // smaller than mainnet block-number forks (e.g. LONDON=21) or timestamp forks
+    // (e.g. SHANGHAI=22). The validator must track ordering per hardfork family
+    // (mainnet vs classic) independently.
+    when(configOptions.getLondonBlockNumber()).thenReturn(OptionalLong.of(21L));
+    when(configOptions.getShanghaiTime()).thenReturn(OptionalLong.of(22L));
+    when(configOptions.getDefuseDifficultyBombBlockNumber()).thenReturn(OptionalLong.of(15L));
+    when(configOptions.getAtlantisBlockNumber()).thenReturn(OptionalLong.of(16L));
+    when(configOptions.getAghartaBlockNumber()).thenReturn(OptionalLong.of(17L));
+    when(configOptions.getPhoenixBlockNumber()).thenReturn(OptionalLong.of(18L));
+
+    final ProtocolSchedule protocolSchedule = builder.createProtocolSchedule();
+    assertThat(protocolSchedule).isNotNull();
+  }
+
+  @Test
   void modifierInsertedBetweenBlocksIsAppliedToLaterAndCreatesInterimMilestone() {
     when(configOptions.getHomesteadBlockNumber()).thenReturn(OptionalLong.of(5L));
 

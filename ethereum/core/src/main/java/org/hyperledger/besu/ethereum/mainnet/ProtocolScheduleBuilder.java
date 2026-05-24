@@ -230,16 +230,41 @@ public class ProtocolScheduleBuilder {
 
   private List<BuilderMapEntry> createMilestones(final MainnetProtocolSpecFactory specFactory) {
 
-    long lastForkBlock = 0;
+    // Validate fork ordering independently per hardfork family (mainnet vs classic)
+    // and per milestone type (block number vs timestamp). Mainnet and classic milestones
+    // are concatenated in the definitions list, so a single counter would incorrectly
+    // compare e.g. mainnet LONDON (block 21) against classic DEFUSE_DIFFICULTY_BOMB (block 15).
+    long lastMainnetBlockFork = 0;
+    long lastMainnetTimestampFork = 0;
+    long lastClassicBlockFork = 0;
+    long lastClassicTimestampFork = 0;
     List<Optional<BuilderMapEntry>> milestones = new ArrayList<>();
     for (MilestoneDefinition milestone :
         MilestoneDefinitions.createMilestoneDefinitions(specFactory, config)) {
       if (milestone.blockNumberOrTimestamp().isPresent()) {
-        long thisForkBlock = milestone.blockNumberOrTimestamp().getAsLong();
-        validateForkOrder(
-            milestone.hardforkId().name(), milestone.blockNumberOrTimestamp(), lastForkBlock);
+        long thisForkValue = milestone.blockNumberOrTimestamp().getAsLong();
+        boolean isClassic =
+            milestone.hardforkId() instanceof HardforkId.ClassicHardforkId;
+        if (milestone.milestoneType() == MilestoneType.BLOCK_NUMBER) {
+          long lastFork = isClassic ? lastClassicBlockFork : lastMainnetBlockFork;
+          validateForkOrder(
+              milestone.hardforkId().name(), milestone.blockNumberOrTimestamp(), lastFork);
+          if (isClassic) {
+            lastClassicBlockFork = thisForkValue;
+          } else {
+            lastMainnetBlockFork = thisForkValue;
+          }
+        } else {
+          long lastFork = isClassic ? lastClassicTimestampFork : lastMainnetTimestampFork;
+          validateForkOrder(
+              milestone.hardforkId().name(), milestone.blockNumberOrTimestamp(), lastFork);
+          if (isClassic) {
+            lastClassicTimestampFork = thisForkValue;
+          } else {
+            lastMainnetTimestampFork = thisForkValue;
+          }
+        }
         milestones.add(createMilestone(milestone));
-        lastForkBlock = thisForkBlock;
       }
     }
     return milestones.stream().flatMap(Optional::stream).toList();
