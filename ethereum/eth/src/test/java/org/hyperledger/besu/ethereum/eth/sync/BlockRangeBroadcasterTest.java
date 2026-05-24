@@ -246,7 +246,12 @@ public class BlockRangeBroadcasterTest {
     when(headHeader.getHash()).thenReturn(Hash.ZERO);
     final ChainHead ourChainHead = new ChainHead(headHeader, ourTD, ourBestNum);
 
-    // Tier 1 and Tier 2 both miss → Tier 3 (proportional scaling) fires
+    // Stub getChainHeadHeader() for the marginal-rate Tier-3 formula (ourCurrentDiff)
+    final BlockHeader chainHeadHeader = mock(BlockHeader.class);
+    when(chainHeadHeader.getDifficulty()).thenReturn(Difficulty.of(2_500_000_000_000L));
+    when(blockchain.getChainHeadHeader()).thenReturn(chainHeadHeader);
+
+    // Tier 1 and Tier 2 both miss → Tier 3 (marginal-rate) fires
     when(blockchain.getTotalDifficultyByHash(any())).thenReturn(Optional.empty());
     when(blockchain.getBlockHeader(peerBlockNum)).thenReturn(Optional.empty());
     when(blockchain.getChainHead()).thenReturn(ourChainHead);
@@ -257,5 +262,52 @@ public class BlockRangeBroadcasterTest {
     powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
 
     verify(chainState).statusReceived(eq(unknownHash), any(Difficulty.class));
+  }
+
+  @Test
+  public void handleBlockRangeUpdate_proportionalScalingTd_matchesMarginalRateFormula() {
+    final EthPeer powPeer = mock(EthPeer.class);
+    final ChainState chainState = mock(ChainState.class);
+    when(powPeer.chainState()).thenReturn(chainState);
+    when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
+
+    // Realistic ETC mainnet anchor values
+    final Difficulty ourTD = Difficulty.of(new BigInteger("24244691155597214264244"));
+    final long ourBestNum = 24_565_949L;
+    final long ourCurrentDiffValue = 2_500_000_000_000L;
+    final long peerBlockNum = 24_566_100L; // 151 blocks ahead
+
+    final BlockHeader headHeader = mock(BlockHeader.class);
+    when(headHeader.getHash()).thenReturn(Hash.ZERO);
+    final ChainHead ourChainHead = new ChainHead(headHeader, ourTD, ourBestNum);
+
+    final BlockHeader chainHeadHeader = mock(BlockHeader.class);
+    when(chainHeadHeader.getDifficulty()).thenReturn(Difficulty.of(ourCurrentDiffValue));
+    when(blockchain.getChainHeadHeader()).thenReturn(chainHeadHeader);
+
+    when(blockchain.getTotalDifficultyByHash(any())).thenReturn(Optional.empty());
+    when(blockchain.getBlockHeader(peerBlockNum)).thenReturn(Optional.empty());
+    when(blockchain.getChainHead()).thenReturn(ourChainHead);
+    when(blockchain.getChainHeadBlockNumber()).thenReturn(ourBestNum);
+
+    final Hash unknownHash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0x1234123412341234123412341234123412341234123412341234123412341234"));
+    final BlockRangeUpdateMessage msg =
+        BlockRangeUpdateMessage.create(0L, peerBlockNum, unknownHash);
+    powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
+
+    // Expected: ourTD + ourCurrentDiff * gap * 9999/10000
+    final long gap = peerBlockNum - ourBestNum; // 151
+    final BigInteger expectedTd =
+        ourTD
+            .getAsBigInteger()
+            .add(
+                BigInteger.valueOf(ourCurrentDiffValue)
+                    .multiply(BigInteger.valueOf(gap))
+                    .multiply(BigInteger.valueOf(9999L))
+                    .divide(BigInteger.valueOf(10000L)));
+    verify(chainState).statusReceived(unknownHash, Difficulty.of(expectedTd));
   }
 }
