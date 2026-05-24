@@ -19,6 +19,7 @@ import org.hyperledger.besu.ethereum.chain.DefaultBlockchain;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Difficulty;
 
+import java.math.BigInteger;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * {@code unsafeImportSyncBodiesAndReceipts()} in Stage 2 already stores TD for every block, making
  * this step unnecessary.
  */
-class PoWTdBackfillStep {
+public class PoWTdBackfillStep {
 
   private static final Logger LOG = LoggerFactory.getLogger(PoWTdBackfillStep.class);
   static final int BATCH_SIZE = 10_000;
@@ -53,6 +54,94 @@ class PoWTdBackfillStep {
 
   PoWTdBackfillStep(final DefaultBlockchain blockchain) {
     this.blockchain = blockchain;
+  }
+
+  /**
+   * Checks whether the chain-head total difficulty is consistent with what a PoW chain should
+   * accumulate from genesis, and repairs it if not.
+   *
+   * <p>After a SNAP sync session where the pivot block's TD was seeded from an ETH69 STATUS message
+   * (which carries no real TD), the pivot and all subsequent blocks end up with a wildly wrong TD
+   * in the DB. Detection heuristic: if {@code chainHeadTD < genesisBlockDifficulty ×
+   * chainHeadNumber} the stored value cannot be correct (it's below even a
+   * constant-genesis-difficulty chain).
+   *
+   * <p>Repair strategy: binary-search backward from the chain head to locate the last block whose
+   * stored TD passes the monotonic lower-bound check, then forward-fill from that anchor.
+   *
+   * @param blockchain the blockchain to inspect and repair
+   */
+  public static void repairPoWTdIfNeeded(final DefaultBlockchain blockchain) {
+    final long chainHeadNumber = blockchain.getChainHeadBlockNumber();
+    if (chainHeadNumber < 2) {
+      return;
+    }
+
+    final Difficulty chainHeadTD = blockchain.getChainHead().getTotalDifficulty();
+
+    final BlockHeader genesisHeader =
+        blockchain
+            .getBlockHeader(0L)
+            .orElseThrow(() -> new IllegalStateException("Genesis block header missing"));
+    final BigInteger genesisDifficulty = genesisHeader.getDifficulty().getAsBigInteger();
+
+    // minExpectedTD: lower bound for a chain where every block has exactly genesis difficulty
+    final BigInteger minExpectedTD =
+        genesisDifficulty.multiply(BigInteger.valueOf(chainHeadNumber));
+
+    if (chainHeadTD.getAsBigInteger().compareTo(minExpectedTD) >= 0) {
+      LOG.debug(
+          "PoW TD integrity check passed: chainHeadTD={} at block {}",
+          chainHeadTD,
+          chainHeadNumber);
+      return;
+    }
+
+    LOG.warn(
+        "PoW TD integrity check FAILED: stored chainHeadTD={} at block {} is below minimum "
+            + "expected {} (genesis_diff × block_count). "
+            + "SNAP sync pivot was likely seeded with a wrong ETH69 STATUS TD. Running repair...",
+        chainHeadTD,
+        chainHeadNumber,
+        Difficulty.of(minExpectedTD));
+
+    // Binary search: find the last block whose TD passes the lower-bound check.
+    // Blocks before the corrupt pivot have correct TDs; blocks at and after have wrong TDs.
+    long lo = 0L;
+    long hi = chainHeadNumber;
+    while (hi - lo > 1) {
+      final long mid = (lo + hi) / 2;
+      if (isTdCorrect(blockchain, mid, genesisDifficulty)) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    final long anchor = lo;
+
+    LOG.info(
+        "PoW TD repair: last correct-TD block is {} (first corrupt block is {}). "
+            + "Repairing {} blocks from anchor {} to chain head {}...",
+        anchor,
+        hi,
+        chainHeadNumber - anchor,
+        anchor,
+        chainHeadNumber);
+
+    new PoWTdBackfillStep(blockchain).backfillTd(anchor, chainHeadNumber);
+  }
+
+  private static boolean isTdCorrect(
+      final DefaultBlockchain blockchain, final long blockNumber, final BigInteger genesisDiff) {
+    return blockchain
+        .getBlockHeader(blockNumber)
+        .flatMap(h -> blockchain.getTotalDifficultyByHash(h.getHash()))
+        .map(
+            td ->
+                td.getAsBigInteger()
+                        .compareTo(genesisDiff.multiply(BigInteger.valueOf(blockNumber)))
+                    >= 0)
+        .orElse(false);
   }
 
   /**

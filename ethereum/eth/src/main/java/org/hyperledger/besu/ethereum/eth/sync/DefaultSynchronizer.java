@@ -16,10 +16,12 @@ package org.hyperledger.besu.ethereum.eth.sync;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.hyperledger.besu.config.MergeConfiguration;
 import org.hyperledger.besu.consensus.merge.ForkchoiceEvent;
 import org.hyperledger.besu.consensus.merge.UnverifiedForkchoiceListener;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
+import org.hyperledger.besu.ethereum.chain.DefaultBlockchain;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Synchronizer;
 import org.hyperledger.besu.ethereum.eth.manager.ChainHeadEstimate;
@@ -28,6 +30,7 @@ import org.hyperledger.besu.ethereum.eth.manager.peertask.PeerTaskExecutor;
 import org.hyperledger.besu.ethereum.eth.sync.common.NoSyncRequiredState;
 import org.hyperledger.besu.ethereum.eth.sync.fullsync.FullSyncDownloader;
 import org.hyperledger.besu.ethereum.eth.sync.fullsync.SyncTerminationCondition;
+import org.hyperledger.besu.ethereum.eth.sync.snapsync.PoWTdBackfillStep;
 import org.hyperledger.besu.ethereum.eth.sync.snapsync.SnapDownloaderFactory;
 import org.hyperledger.besu.ethereum.eth.sync.snapsync.SnapSyncController;
 import org.hyperledger.besu.ethereum.eth.sync.snapsync.SnapSyncProcessState;
@@ -185,6 +188,11 @@ public class DefaultSynchronizer implements Synchronizer, UnverifiedForkchoiceLi
   public CompletableFuture<Void> start() {
     if (running.compareAndSet(false, true)) {
       LOG.info("Starting synchronizer.");
+
+      if (!MergeConfiguration.isMergeEnabled()
+          && protocolContext.getBlockchain() instanceof DefaultBlockchain defaultBlockchain) {
+        PoWTdBackfillStep.repairPoWTdIfNeeded(defaultBlockchain);
+      }
 
       syncDurationMetrics.startTimer(SyncDurationMetrics.Labels.TOTAL_SYNC_DURATION);
 
