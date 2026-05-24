@@ -21,20 +21,30 @@ import org.hyperledger.besu.ethereum.blockcreation.MiningCoordinator;
 import org.hyperledger.besu.ethereum.blockcreation.PoWMinerExecutor;
 import org.hyperledger.besu.ethereum.blockcreation.PoWMiningCoordinator;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
+import org.hyperledger.besu.ethereum.core.BlockHeader;
+import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.eth.manager.EthProtocolManager;
 import org.hyperledger.besu.ethereum.eth.sync.state.SyncState;
 import org.hyperledger.besu.ethereum.eth.transactions.TransactionPool;
+import org.hyperledger.besu.ethereum.mainnet.ArtificialFinality;
 import org.hyperledger.besu.ethereum.mainnet.EpochCalculator;
 import org.hyperledger.besu.ethereum.mainnet.MainnetBlockHeaderValidator;
 import org.hyperledger.besu.ethereum.mainnet.MainnetProtocolSchedule;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
 import org.hyperledger.besu.ethereum.worldstate.WorldStateArchive;
 
+import java.util.Comparator;
 import java.util.Optional;
+import java.util.OptionalLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** The Mainnet besu controller builder. */
 public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MainnetBesuControllerBuilder.class);
 
   private EpochCalculator epochCalculator = new EpochCalculator.DefaultEpochCalculator();
 
@@ -70,7 +80,115 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
       miningCoordinator.enable();
     }
 
+    // Set MESS-aware block choice rule if ECBP-1100 is configured
+    setupMessBlockChoiceRule(protocolContext.getBlockchain());
+
     return miningCoordinator;
+  }
+
+  /**
+   * If ECBP-1100 (MESS) is configured, wrap the default block choice rule with one that applies
+   * the MESS antigravity check before allowing reorgs.
+   */
+  private void setupMessBlockChoiceRule(final Blockchain blockchain) {
+    final OptionalLong activationBlock = genesisConfigOptions.getEcbp1100Block();
+    final OptionalLong deactivationBlock = genesisConfigOptions.getEcbp1100DeactivateBlock();
+
+    if (activationBlock.isEmpty()) {
+      return;
+    }
+
+    LOG.info(
+        "ECBP-1100 (MESS) configured: activation={}, deactivation={}",
+        activationBlock.getAsLong(),
+        deactivationBlock.isPresent() ? deactivationBlock.getAsLong() : "none");
+
+    final Comparator<BlockHeader> baseRule = blockchain.getBlockChoiceRule();
+    blockchain.setBlockChoiceRule(
+        (newHeader, currentHeader) -> {
+          final int baseResult = baseRule.compare(newHeader, currentHeader);
+          if (baseResult <= 0) {
+            return baseResult; // No reorg needed, MESS irrelevant
+          }
+
+          // Check if MESS is active for the current block
+          if (!ArtificialFinality.isActive(
+              currentHeader.getNumber(), activationBlock, deactivationBlock)) {
+            return baseResult;
+          }
+
+          // Find common ancestor and apply MESS check
+          return applyMessCheck(blockchain, currentHeader, newHeader, baseResult);
+        });
+  }
+
+  private int applyMessCheck(
+      final Blockchain blockchain,
+      final BlockHeader currentHeader,
+      final BlockHeader newHeader,
+      final int baseResult) {
+    // Walk back from both headers to find the common ancestor
+    BlockHeader oldH = currentHeader;
+    BlockHeader newH = newHeader;
+
+    // Equalize heights
+    while (oldH.getNumber() > newH.getNumber()) {
+      final Optional<BlockHeader> parent =
+          blockchain.getBlockHeader(oldH.getParentHash());
+      if (parent.isEmpty()) return baseResult;
+      oldH = parent.get();
+    }
+    while (newH.getNumber() > oldH.getNumber()) {
+      final Optional<BlockHeader> parent =
+          blockchain.getBlockHeader(newH.getParentHash());
+      if (parent.isEmpty()) return baseResult;
+      newH = parent.get();
+    }
+
+    // Find common ancestor
+    while (!oldH.getHash().equals(newH.getHash())) {
+      final Optional<BlockHeader> oldParent =
+          blockchain.getBlockHeader(oldH.getParentHash());
+      final Optional<BlockHeader> newParent =
+          blockchain.getBlockHeader(newH.getParentHash());
+      if (oldParent.isEmpty() || newParent.isEmpty()) return baseResult;
+      oldH = oldParent.get();
+      newH = newParent.get();
+    }
+    final BlockHeader commonAncestor = oldH;
+
+    // Get subchain total difficulties
+    final Optional<Difficulty> commonAncestorTD =
+        blockchain.getTotalDifficultyByHash(commonAncestor.getHash());
+    final Optional<Difficulty> localTD =
+        blockchain.getTotalDifficultyByHash(currentHeader.getHash());
+    final Optional<Difficulty> proposedTD =
+        blockchain.getTotalDifficultyByHash(newHeader.getHash());
+
+    if (commonAncestorTD.isEmpty() || localTD.isEmpty() || proposedTD.isEmpty()) {
+      return baseResult;
+    }
+
+    final Difficulty localSubchainTD =
+        Difficulty.of(
+            localTD.get().toBigInteger().subtract(commonAncestorTD.get().toBigInteger()));
+    final Difficulty proposedSubchainTD =
+        Difficulty.of(
+            proposedTD.get().toBigInteger().subtract(commonAncestorTD.get().toBigInteger()));
+
+    final long timeDelta = currentHeader.getTimestamp() - commonAncestor.getTimestamp();
+
+    if (ArtificialFinality.shouldRejectReorg(timeDelta, localSubchainTD, proposedSubchainTD)) {
+      LOG.warn(
+          "ECBP1100-MESS rejected reorg: common={} current={} proposed={} timeDelta={}s",
+          commonAncestor.getNumber(),
+          currentHeader.getNumber(),
+          newHeader.getNumber(),
+          timeDelta);
+      return -1; // Reject reorg
+    }
+
+    return baseResult;
   }
 
   @Override

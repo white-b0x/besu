@@ -454,6 +454,16 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
   }
 
   @Override
+  public OptionalLong getEcbp1100Block() {
+    return getOptionalLong("ecbp1100block");
+  }
+
+  @Override
+  public OptionalLong getEcbp1100DeactivateBlock() {
+    return getOptionalLong("ecbp1100deactivateblock");
+  }
+
+  @Override
   public Optional<BigInteger> getChainId() {
     return getOptionalBigInteger("chainid");
   }
@@ -562,6 +572,8 @@ public class JsonGenesisConfigOptions implements GenesisConfigOptions {
     getMagnetoBlockNumber().ifPresent(l -> builder.put("magnetoBlock", l));
     getMystiqueBlockNumber().ifPresent(l -> builder.put("mystiqueBlock", l));
     getSpiralBlockNumber().ifPresent(l -> builder.put("spiralBlock", l));
+    getEcbp1100Block().ifPresent(l -> builder.put("ecbp1100Block", l));
+    getEcbp1100DeactivateBlock().ifPresent(l -> builder.put("ecbp1100DeactivateBlock", l));
 
     getContractSizeLimit().ifPresent(l -> builder.put("contractSizeLimit", l));
     getEvmStackSize().ifPresent(l -> builder.put("evmstacksize", l));

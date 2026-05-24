@@ -501,6 +501,22 @@ public interface GenesisConfigOptions {
   OptionalLong getSpiralBlockNumber();
 
   /**
+   * Block number to activate ECBP-1100 (MESS) on Classic networks.
+   *
+   * @return block number of ECBP-1100 activation on Classic networks
+   * @see <a
+   *     href="https://ecips.ethereumclassic.org/ECIPs/ecip-1100">https://ecips.ethereumclassic.org/ECIPs/ecip-1100</a>
+   */
+  OptionalLong getEcbp1100Block();
+
+  /**
+   * Block number to deactivate ECBP-1100 (MESS) on Classic networks.
+   *
+   * @return block number of ECBP-1100 deactivation on Classic networks
+   */
+  OptionalLong getEcbp1100DeactivateBlock();
+
+  /**
    * Gets chain id.
    *
    * @return the chain id

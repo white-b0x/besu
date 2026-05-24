@@ -30,6 +30,7 @@ import static org.hyperledger.besu.ethereum.core.MiningConfiguration.Unstable.DE
 import org.hyperledger.besu.cli.converter.PositiveNumberConverter;
 import org.hyperledger.besu.cli.util.CommandLineUtils;
 import org.hyperledger.besu.config.GenesisConfigOptions;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
@@ -50,8 +51,18 @@ import picocli.CommandLine.ParameterException;
 /** The Mining CLI options. */
 public class MiningOptions implements CLIOptions<MiningConfiguration> {
 
-  private static final String DEPRECATION_PREFIX =
-      "Deprecated. PoW consensus is deprecated. See CHANGELOG for alternative options. ";
+  @Option(
+      names = {"--miner-enabled"},
+      description = "Set if node will perform mining (default: ${DEFAULT-VALUE})")
+  private Boolean isMiningEnabled = false;
+
+  @Option(
+      names = {"--miner-coinbase"},
+      description =
+          "Account to which mining rewards are paid. You must specify a valid coinbase if"
+              + " mining is enabled using --miner-enabled option",
+      arity = "1")
+  private Address coinbase = null;
 
   @Option(
       names = {"--miner-extra-data"},
@@ -95,7 +106,7 @@ public class MiningOptions implements CLIOptions<MiningConfiguration> {
       names = {"--block-txs-selection-max-time"},
       converter = PositiveNumberConverter.class,
       description =
-          "Specifies the maximum time, in milliseconds, that could be spent selecting transactions to be included in the block on PoS networks."
+          "Specifies the maximum time, in milliseconds, that could be spent selecting transactions to be included in the block."
               + " Not compatible with PoA networks, see poa-block-txs-selection-max-time. (default: ${DEFAULT-VALUE})")
   private PositiveNumber posBlockTxsSelectionMaxTime = DEFAULT_POS_BLOCK_TXS_SELECTION_MAX_TIME;
 
@@ -207,6 +218,13 @@ public class MiningOptions implements CLIOptions<MiningConfiguration> {
       final boolean isMergeEnabled,
       final Logger logger) {
 
+    if (Boolean.TRUE.equals(isMiningEnabled) && coinbase == null) {
+      throw new ParameterException(
+          commandLine,
+          "Unable to mine without a valid coinbase. Either disable mining (remove --miner-enabled)"
+              + " or specify the beneficiary of mining (via --miner-coinbase <Address>)");
+    }
+
     if (unstableOptions.posBlockCreationMaxTime <= 0
         || unstableOptions.posBlockCreationMaxTime > DEFAULT_POS_BLOCK_CREATION_MAX_TIME) {
       throw new ParameterException(
@@ -229,9 +247,9 @@ public class MiningOptions implements CLIOptions<MiningConfiguration> {
 
     CommandLineUtils.failIfOptionDoesntMeetRequirement(
         commandLine,
-        "--block-txs-selection-max-time can only be used on networks with PoS support in the genesis file,"
+        "--block-txs-selection-max-time is not compatible with pure PoA networks,"
             + " see --poa-block-txs-selection-max-time instead",
-        genesisConfigOptions.hasPos(),
+        !genesisConfigOptions.isPoa() || genesisConfigOptions.hasPos(),
         singletonList("--block-txs-selection-max-time"));
 
     CommandLineUtils.failIfOptionDoesntMeetRequirement(
@@ -266,6 +284,8 @@ public class MiningOptions implements CLIOptions<MiningConfiguration> {
     final MiningOptions miningOptions = MiningOptions.create();
     miningOptions.setTransactionSelectionService(
         miningConfiguration.getTransactionSelectionService());
+    miningOptions.isMiningEnabled = miningConfiguration.isMiningEnabled();
+    miningOptions.coinbase = miningConfiguration.getCoinbase().orElse(null);
     miningOptions.extraData = miningConfiguration.getExtraData();
     miningOptions.minTransactionGasPrice = miningConfiguration.getMinTransactionGasPrice();
     miningOptions.minPriorityFeePerGas = miningConfiguration.getMinPriorityFeePerGas();
@@ -301,12 +321,17 @@ public class MiningOptions implements CLIOptions<MiningConfiguration> {
 
     final var updatableInitValuesBuilder =
         MutableInitValues.builder()
+            .isMiningEnabled(isMiningEnabled)
             .extraData(extraData)
             .minTransactionGasPrice(minTransactionGasPrice)
             .minPriorityFeePerGas(minPriorityFeePerGas);
 
     if (maxBlobsPerTransaction != null) {
       updatableInitValuesBuilder.maxBlobsPerTransaction(maxBlobsPerTransaction);
+    }
+
+    if (coinbase != null) {
+      updatableInitValuesBuilder.coinbase(coinbase);
     }
 
     if (targetGasLimit != null) {

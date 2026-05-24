@@ -21,7 +21,6 @@ import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcRespon
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcSuccessResponse;
 import org.hyperledger.besu.ethereum.blockcreation.MiningCoordinator;
 
-@Deprecated(since = "24.12.0")
 public class MinerStop implements JsonRpcMethod {
 
   private final MiningCoordinator miningCoordinator;

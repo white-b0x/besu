@@ -76,6 +76,8 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   private OptionalLong magnetoBlockNumber = OptionalLong.empty();
   private OptionalLong mystiqueBlockNumber = OptionalLong.empty();
   private OptionalLong spiralBlockNumber = OptionalLong.empty();
+  private OptionalLong ecbp1100Block = OptionalLong.empty();
+  private OptionalLong ecbp1100DeactivateBlock = OptionalLong.empty();
   private Optional<BigInteger> chainId = Optional.empty();
   private OptionalInt contractSizeLimit = OptionalInt.empty();
   private OptionalInt stackSizeLimit = OptionalInt.empty();
@@ -388,6 +390,16 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
   }
 
   @Override
+  public OptionalLong getEcbp1100Block() {
+    return ecbp1100Block;
+  }
+
+  @Override
+  public OptionalLong getEcbp1100DeactivateBlock() {
+    return ecbp1100DeactivateBlock;
+  }
+
+  @Override
   public OptionalInt getContractSizeLimit() {
     return contractSizeLimit;
   }
@@ -454,6 +466,8 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
     getMagnetoBlockNumber().ifPresent(l -> builder.put("magnetoBlock", l));
     getMystiqueBlockNumber().ifPresent(l -> builder.put("mystiqueBlock", l));
     getSpiralBlockNumber().ifPresent(l -> builder.put("spiralBlock", l));
+    getEcbp1100Block().ifPresent(l -> builder.put("ecbp1100Block", l));
+    getEcbp1100DeactivateBlock().ifPresent(l -> builder.put("ecbp1100DeactivateBlock", l));
 
     getContractSizeLimit().ifPresent(l -> builder.put("contractSizeLimit", l));
     getEvmStackSize().ifPresent(l -> builder.put("evmStackSize", l));
@@ -1012,6 +1026,28 @@ public class StubGenesisConfigOptions implements GenesisConfigOptions, Cloneable
    */
   public StubGenesisConfigOptions spiral(final long blockNumber) {
     spiralBlockNumber = OptionalLong.of(blockNumber);
+    return this;
+  }
+
+  /**
+   * ECBP-1100 activation block stub genesis config options.
+   *
+   * @param blockNumber the block number
+   * @return the stub genesis config options
+   */
+  public StubGenesisConfigOptions ecbp1100(final long blockNumber) {
+    ecbp1100Block = OptionalLong.of(blockNumber);
+    return this;
+  }
+
+  /**
+   * ECBP-1100 deactivation block stub genesis config options.
+   *
+   * @param blockNumber the block number
+   * @return the stub genesis config options
+   */
+  public StubGenesisConfigOptions ecbp1100Deactivate(final long blockNumber) {
+    ecbp1100DeactivateBlock = OptionalLong.of(blockNumber);
     return this;
   }
 

@@ -196,10 +196,10 @@ public class MiningOptionsTest extends AbstractCLIOptionsTest<MiningConfiguratio
   }
 
   @Test
-  public void blockTxsSelectionMaxTimeIncompatibleWithoutPoSTransition() throws IOException {
+  public void blockTxsSelectionMaxTimeIncompatibleWithPurePoA() throws IOException {
     final Path genesisFileIBFT2 = createFakeGenesisFile(VALID_GENESIS_IBFT2_POST_LONDON);
     internalTestFailure(
-        "--block-txs-selection-max-time can only be used on networks with PoS support in the genesis file, see --poa-block-txs-selection-max-time instead",
+        "--block-txs-selection-max-time is not compatible with pure PoA networks, see --poa-block-txs-selection-max-time instead",
         "--genesis-file",
         genesisFileIBFT2.toString(),
         "--block-txs-selection-max-time",
