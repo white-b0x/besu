@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
 
 # Stage: Use Eclipse Temurin JRE
-FROM mirror.gcr.io/library/eclipse-temurin@sha256:1bda4d9e668f44f399abed30636c34e0befb727408fba27b1e6aaefcf9df346b AS java-base
+FROM eclipse-temurin:21-jre AS java-base
 
 # Stage: Final Besu image
 FROM mirror.gcr.io/library/ubuntu:24.04@sha256:c4a8d5503dfb2a3eb8ab5f807da5bc69a85730fb49b5cfca2330194ebcc41c7b
