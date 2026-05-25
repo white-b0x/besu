@@ -19,6 +19,7 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerIstanbulOperations;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.BaseFeeOperation;
+import org.hyperledger.besu.evm.operation.CountLeadingZerosOperation;
 import org.hyperledger.besu.evm.operation.MCopyOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.operation.Push0Operation;
@@ -114,6 +115,8 @@ public class ClassicEVMs {
     registry.put(new MCopyOperation(gasCalculator));
     // EIP-6780: SELFDESTRUCT only in same tx (ECIP-1121)
     registry.put(new SelfDestructOperation(gasCalculator, true));
+    // EIP-7939: CLZ opcode (ECIP-1121)
+    registry.put(new CountLeadingZerosOperation(gasCalculator));
     return registry;
   }
 }

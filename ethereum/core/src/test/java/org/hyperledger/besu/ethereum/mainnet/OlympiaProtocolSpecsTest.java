@@ -28,6 +28,9 @@ import org.hyperledger.besu.ethereum.mainnet.blockhash.OlympiaPreExecutionProces
 import org.hyperledger.besu.evm.gascalculator.OsakaGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.ShanghaiGasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
+import org.hyperledger.besu.evm.operation.CountLeadingZerosOperation;
+import org.hyperledger.besu.evm.operation.InvalidOperation;
+import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.metrics.noop.NoOpMetricsSystem;
 
 import java.math.BigInteger;
@@ -212,5 +215,23 @@ public class OlympiaProtocolSpecsTest {
   public void spiralDoesNotUseOlympiaGasLimitCalculator() {
     assertThat(specAt(SPIRAL_BLOCK).getGasLimitCalculator())
         .isNotInstanceOf(OlympiaTargetingGasLimitCalculator.class);
+  }
+
+  // --- EIP-7939: CLZ opcode (0x1e) ---
+
+  @Test
+  public void olympiaSupportsCLZOpcode() {
+    Operation clz = specAt(OLYMPIA_BLOCK).getEvm().getOperationsUnsafe()[0x1e];
+    assertThat(clz)
+        .as("Olympia must support EIP-7939 CLZ opcode (0x1e)")
+        .isInstanceOf(CountLeadingZerosOperation.class);
+  }
+
+  @Test
+  public void spiralDoesNotSupportCLZOpcode() {
+    Operation clz = specAt(SPIRAL_BLOCK).getEvm().getOperationsUnsafe()[0x1e];
+    assertThat(clz)
+        .as("Spiral (pre-Olympia) must have InvalidOperation at 0x1e, not CLZ")
+        .isInstanceOf(InvalidOperation.class);
   }
 }
