@@ -220,6 +220,7 @@ public class MainnetBesuControllerBuilder extends BesuControllerBuilder {
     genesisConfigOptions
         .getThanosBlockNumber()
         .ifPresent(
-            activationBlock -> epochCalculator = new EpochCalculator.Ecip1099EpochCalculator());
+            activationBlock ->
+                epochCalculator = new EpochCalculator.Ecip1099EpochCalculator(activationBlock));
   }
 }

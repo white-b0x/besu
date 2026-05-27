@@ -32,23 +32,33 @@ public interface EpochCalculator {
     }
   }
 
+  // ECIP-1099: doubles ETChash epoch length from 30K to 60K blocks at activation
   final class Ecip1099EpochCalculator implements EpochCalculator {
-    // private final long activationBlock;
+    private final long ecip1099FBlock;
 
-    //    public Ecip1099EpochCalculator(final long activationBlock) {
-    //      this.activationBlock = activationBlock;
-    //    }
-
-    /** calculate start block given epoch */
-    @Override
-    public long epochStartBlock(final long block) {
-      long epoch = cacheEpoch(block);
-      return epoch * (EthHash.EPOCH_LENGTH * 2) + 1;
+    public Ecip1099EpochCalculator(final long ecip1099FBlock) {
+      this.ecip1099FBlock = ecip1099FBlock;
     }
 
     @Override
     public long cacheEpoch(final long block) {
-      return Long.divideUnsigned(block, EthHash.EPOCH_LENGTH * 2);
+      if (block < ecip1099FBlock) {
+        return Long.divideUnsigned(block, EthHash.EPOCH_LENGTH);
+      }
+      long preTransitionEpochs = Long.divideUnsigned(ecip1099FBlock, EthHash.EPOCH_LENGTH);
+      long blocksAfterTransition = block - ecip1099FBlock;
+      return preTransitionEpochs
+          + Long.divideUnsigned(blocksAfterTransition, EthHash.EPOCH_LENGTH * 2);
+    }
+
+    @Override
+    public long epochStartBlock(final long block) {
+      if (block < ecip1099FBlock) {
+        return cacheEpoch(block) * EthHash.EPOCH_LENGTH + 1;
+      }
+      long epochsSinceTransition =
+          Long.divideUnsigned(block - ecip1099FBlock, EthHash.EPOCH_LENGTH * 2);
+      return ecip1099FBlock + epochsSinceTransition * EthHash.EPOCH_LENGTH * 2 + 1;
     }
   }
 }

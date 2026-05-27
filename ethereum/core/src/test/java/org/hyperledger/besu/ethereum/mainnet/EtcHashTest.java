@@ -43,7 +43,7 @@ public class EtcHashTest {
 
   @Test
   public void testEcip1099EpochCalculator() {
-    EpochCalculator epochCalculator = new EpochCalculator.Ecip1099EpochCalculator();
+    EpochCalculator epochCalculator = new EpochCalculator.Ecip1099EpochCalculator(0L);
 
     // check before epoch 1
     Assertions.assertThat(epochCalculator.cacheEpoch(59_999L)).isEqualTo(0);
@@ -54,7 +54,7 @@ public class EtcHashTest {
 
   @Test
   public void testEcip1099EpochCalculatorStartBlock() {
-    EpochCalculator epochCalculator = new EpochCalculator.Ecip1099EpochCalculator();
+    EpochCalculator epochCalculator = new EpochCalculator.Ecip1099EpochCalculator(0L);
 
     // check before epoch 0 ends
     Assertions.assertThat(epochCalculator.epochStartBlock(59_999L)).isEqualTo(1);

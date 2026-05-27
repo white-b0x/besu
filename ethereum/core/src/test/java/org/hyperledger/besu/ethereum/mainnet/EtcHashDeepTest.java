@@ -35,7 +35,7 @@ public class EtcHashDeepTest {
   private static final EpochCalculator DEFAULT_CALCULATOR =
       new EpochCalculator.DefaultEpochCalculator();
   private static final EpochCalculator ECIP1099_CALCULATOR =
-      new EpochCalculator.Ecip1099EpochCalculator();
+      new EpochCalculator.Ecip1099EpochCalculator(0L);
 
   // --- Seed uniqueness ---
 

@@ -311,6 +311,7 @@ public class ClassicProtocolSpecs {
       final boolean isParallelTxProcessingEnabled,
       final BalConfiguration balConfiguration,
       final MetricsSystem metricsSystem) {
+    final long ecip1099FBlock = genesisConfigOptions.getThanosBlockNumber().orElse(0L);
     return phoenixDefinition(
             chainId,
             enableRevertReason,
@@ -322,11 +323,13 @@ public class ClassicProtocolSpecs {
         .blockHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
                 MainnetBlockHeaderValidator.createPgaBlockHeaderValidator(
-                    new EpochCalculator.Ecip1099EpochCalculator(), powHasher(PowAlgorithm.ETHASH)))
+                    new EpochCalculator.Ecip1099EpochCalculator(ecip1099FBlock),
+                    powHasher(PowAlgorithm.ETHASH)))
         .ommerHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
                 MainnetBlockHeaderValidator.createLegacyFeeMarketOmmerValidator(
-                    new EpochCalculator.Ecip1099EpochCalculator(), powHasher(PowAlgorithm.ETHASH)))
+                    new EpochCalculator.Ecip1099EpochCalculator(ecip1099FBlock),
+                    powHasher(PowAlgorithm.ETHASH)))
         .hardforkId(THANOS);
   }
 
@@ -440,6 +443,7 @@ public class ClassicProtocolSpecs {
     final long olympiaBlockNumber =
         genesisConfigOptions.getOlympiaBlockNumber().orElse(Long.MAX_VALUE);
     final Optional<Address> treasuryAddress = genesisConfigOptions.getOlympiaTreasuryAddress();
+    final long ecip1099FBlock = genesisConfigOptions.getThanosBlockNumber().orElse(0L);
     return spiralDefinition(
             chainId,
             enableRevertReason,
@@ -532,13 +536,13 @@ public class ClassicProtocolSpecs {
                     protocolSchedule,
                     balConfig,
                     treasuryAddress))
-        // Base fee market header validator with ECIP-1099 epoch calculator (60K epochs)
+        // Base fee market header validator with ECIP-1099 epoch calculator
         .blockHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
-                createClassicBaseFeeMarketValidator((BaseFeeMarket) feeMarket))
+                createClassicBaseFeeMarketValidator((BaseFeeMarket) feeMarket, ecip1099FBlock))
         .ommerHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
-                createClassicBaseFeeMarketOmmerValidator((BaseFeeMarket) feeMarket))
+                createClassicBaseFeeMarketOmmerValidator((BaseFeeMarket) feeMarket, ecip1099FBlock))
         .blockBodyValidatorBuilder(BaseFeeBlockBodyValidator::new)
         // EIP-2935: block hash history system contract + EIP-7709 block hash lookup
         .preExecutionProcessor(new OlympiaPreExecutionProcessor())
@@ -547,13 +551,8 @@ public class ClassicProtocolSpecs {
         .hardforkId(OLYMPIA);
   }
 
-  /**
-   * Creates a base fee market block header validator using ECIP-1099 epoch calculator (60K epochs)
-   * for PoW validation on ETC. This is the ETC equivalent of {@link
-   * MainnetBlockHeaderValidator#createBaseFeeMarketValidator(BaseFeeMarket)}.
-   */
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketValidator(
-      final BaseFeeMarket baseFeeMarket) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
@@ -572,13 +571,13 @@ public class ClassicProtocolSpecs {
         .addRule(new BaseFeeMarketBlockHeaderGasPriceValidationRule(baseFeeMarket))
         .addRule(
             new ProofOfWorkValidationRule(
-                new EpochCalculator.Ecip1099EpochCalculator(),
+                new EpochCalculator.Ecip1099EpochCalculator(ecip1099FBlock),
                 powHasher(PowAlgorithm.ETHASH),
                 Optional.of(baseFeeMarket)));
   }
 
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketOmmerValidator(
-      final BaseFeeMarket baseFeeMarket) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
@@ -592,7 +591,7 @@ public class ClassicProtocolSpecs {
         .addRule(new ExtraDataMaxLengthValidationRule(BlockHeader.MAX_EXTRA_DATA_BYTES))
         .addRule(
             new ProofOfWorkValidationRule(
-                new EpochCalculator.Ecip1099EpochCalculator(),
+                new EpochCalculator.Ecip1099EpochCalculator(ecip1099FBlock),
                 powHasher(PowAlgorithm.ETHASH),
                 Optional.of(baseFeeMarket)))
         .addRule(new BaseFeeMarketBlockHeaderGasPriceValidationRule(baseFeeMarket));
