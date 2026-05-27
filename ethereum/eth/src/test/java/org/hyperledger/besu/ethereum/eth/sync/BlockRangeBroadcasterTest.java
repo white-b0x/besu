@@ -265,13 +265,13 @@ public class BlockRangeBroadcasterTest {
   }
 
   @Test
-  public void handleBlockRangeUpdate_proportionalScalingTd_matchesMarginalRateFormula() {
+  public void handleBlockRangeUpdate_powScalingTd_rollingWindowFallback() {
     final EthPeer powPeer = mock(EthPeer.class);
     final ChainState chainState = mock(ChainState.class);
     when(powPeer.chainState()).thenReturn(chainState);
     when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
 
-    // Realistic ETC mainnet anchor values
+    // Realistic ETC mainnet anchor values (head > 10K — rolling window branch)
     final Difficulty ourTD = Difficulty.of(new BigInteger("24244691155597214264244"));
     final long ourBestNum = 24_565_949L;
     final long ourCurrentDiffValue = 2_500_000_000_000L;
@@ -285,7 +285,67 @@ public class BlockRangeBroadcasterTest {
     when(chainHeadHeader.getDifficulty()).thenReturn(Difficulty.of(ourCurrentDiffValue));
     when(blockchain.getChainHeadHeader()).thenReturn(chainHeadHeader);
 
+    // Tier 1 and Tier 2 miss; window block also absent → fallback to headDiff
     when(blockchain.getTotalDifficultyByHash(any())).thenReturn(Optional.empty());
+    when(blockchain.getBlockHeader(peerBlockNum)).thenReturn(Optional.empty());
+    when(blockchain.getBlockHeader(ourBestNum - BlockRangeBroadcaster.POW_SCALING_WINDOW))
+        .thenReturn(Optional.empty());
+    when(blockchain.getChainHead()).thenReturn(ourChainHead);
+    when(blockchain.getChainHeadBlockNumber()).thenReturn(ourBestNum);
+
+    final Hash unknownHash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0x1234123412341234123412341234123412341234123412341234123412341234"));
+    final BlockRangeUpdateMessage msg =
+        BlockRangeUpdateMessage.create(0L, peerBlockNum, unknownHash);
+    powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
+
+    // Fallback rate = headDiff (window block absent); expected = ourTD + headDiff * gap
+    final long gap = peerBlockNum - ourBestNum; // 151
+    final BigInteger expectedTd =
+        ourTD
+            .getAsBigInteger()
+            .add(BigInteger.valueOf(ourCurrentDiffValue).multiply(BigInteger.valueOf(gap)));
+    verify(chainState).statusReceived(unknownHash, Difficulty.of(expectedTd));
+  }
+
+  @Test
+  public void handleBlockRangeUpdate_powScalingTd_rollingWindowHit() {
+    final EthPeer powPeer = mock(EthPeer.class);
+    final ChainState chainState = mock(ChainState.class);
+    when(powPeer.chainState()).thenReturn(chainState);
+    when(chainState.getEstimatedTotalDifficulty()).thenReturn(Difficulty.of(0));
+
+    final Difficulty ourTD = Difficulty.of(new BigInteger("24244691155597214264244"));
+    final long ourBestNum = 24_565_949L;
+    final long peerBlockNum = 24_566_100L; // 151 blocks ahead
+    // Window TD: 10K blocks of ~2.4T diff each → ~24T below head
+    final Difficulty windowTD =
+        Difficulty.of(ourTD.getAsBigInteger().subtract(new BigInteger("24000000000000000")));
+    final long windowStart = ourBestNum - BlockRangeBroadcaster.POW_SCALING_WINDOW;
+
+    final BlockHeader headHeader = mock(BlockHeader.class);
+    when(headHeader.getHash()).thenReturn(Hash.ZERO);
+    final ChainHead ourChainHead = new ChainHead(headHeader, ourTD, ourBestNum);
+
+    // Window block present with known TD
+    final BlockHeader windowHeader = mock(BlockHeader.class);
+    final Hash windowHash =
+        Hash.wrap(
+            org.apache.tuweni.bytes.Bytes32.fromHexString(
+                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    .substring(0, 66)));
+    when(windowHeader.getHash()).thenReturn(windowHash);
+    when(blockchain.getBlockHeader(windowStart)).thenReturn(Optional.of(windowHeader));
+
+    // Tier 1 and Tier 2 miss for peer block; window hash returns windowTD
+    when(blockchain.getTotalDifficultyByHash(any()))
+        .thenAnswer(
+            inv -> {
+              Hash h = inv.getArgument(0);
+              return h.equals(windowHash) ? Optional.of(windowTD) : Optional.empty();
+            });
     when(blockchain.getBlockHeader(peerBlockNum)).thenReturn(Optional.empty());
     when(blockchain.getChainHead()).thenReturn(ourChainHead);
     when(blockchain.getChainHeadBlockNumber()).thenReturn(ourBestNum);
@@ -298,16 +358,15 @@ public class BlockRangeBroadcasterTest {
         BlockRangeUpdateMessage.create(0L, peerBlockNum, unknownHash);
     powBroadcaster.handleBlockRangeUpdateMessage(new EthMessage(powPeer, msg));
 
-    // Expected: ourTD + ourCurrentDiff * gap * 9999/10000
-    final long gap = peerBlockNum - ourBestNum; // 151
-    final BigInteger expectedTd =
+    // rate = (ourTD - windowTD) / 10_000; expectedTd = ourTD + rate * gap
+    final BigInteger rate =
         ourTD
             .getAsBigInteger()
-            .add(
-                BigInteger.valueOf(ourCurrentDiffValue)
-                    .multiply(BigInteger.valueOf(gap))
-                    .multiply(BigInteger.valueOf(9999L))
-                    .divide(BigInteger.valueOf(10000L)));
+            .subtract(windowTD.getAsBigInteger())
+            .divide(BigInteger.valueOf(BlockRangeBroadcaster.POW_SCALING_WINDOW));
+    final long gap = peerBlockNum - ourBestNum; // 151
+    final BigInteger expectedTd =
+        ourTD.getAsBigInteger().add(rate.multiply(BigInteger.valueOf(gap)));
     verify(chainState).statusReceived(unknownHash, Difficulty.of(expectedTd));
   }
 }

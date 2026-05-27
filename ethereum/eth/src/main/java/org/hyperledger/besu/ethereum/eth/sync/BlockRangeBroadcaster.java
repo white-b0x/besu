@@ -43,6 +43,9 @@ public class BlockRangeBroadcaster {
   // range update block interval
   static final int BLOCK_RANGE_UPDATE_INTERVAL = 120;
 
+  // Rolling window size for Tier 3 PoW scaling estimate (~36 hours at 13s/block)
+  public static final long POW_SCALING_WINDOW = 10_000L;
+
   private final EthContext ethContext;
   private final Blockchain blockchain;
   private final boolean isPoWChain;
@@ -133,26 +136,19 @@ public class BlockRangeBroadcaster {
         resolvedTD = byNumber.get();
         tdSource = "CANONICAL_NUMBER";
       } else {
-        // Tier 3: marginal-rate estimate — fallback for peers ahead of our chain head.
-        // Uses current block difficulty as the per-block rate for the gap, not the
-        // historical average (ourTD/ourBestNum). 9999/10000 guarantees a slight
-        // underestimate (< 0.01%) so we never overshoot the real ETH68 TD.
+        // Tier 3: rolling 10K-block window average — regime-aware estimate.
+        // Avoids pre-merge era contamination (all-time avg flaw) and point-in-time
+        // hashrate spikes (headDiff flaw). Window transitions naturally as we sync.
         final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
         final long ourBestNum = blockchain.getChainHeadBlockNumber();
-        if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
-          final BigInteger ourCurrentDiff =
-              blockchain.getChainHeadHeader().getDifficulty().getAsBigInteger();
+        if (!ourTD.equals(Difficulty.ZERO)) {
+          final BigInteger rate = powScalingRate(ourTD, ourBestNum);
+          if (rate == null) {
+            return;
+          }
           final BigInteger gap = BigInteger.valueOf(Math.max(0L, latestBlockNumber - ourBestNum));
-          resolvedTD =
-              Difficulty.of(
-                  ourTD
-                      .getAsBigInteger()
-                      .add(
-                          ourCurrentDiff
-                              .multiply(gap)
-                              .multiply(BigInteger.valueOf(9999L))
-                              .divide(BigInteger.valueOf(10000L))));
-          tdSource = "PROPORTIONAL_SCALING";
+          resolvedTD = Difficulty.of(ourTD.getAsBigInteger().add(rate.multiply(gap)));
+          tdSource = "POW_SCALING";
         } else {
           return;
         }
@@ -180,6 +176,37 @@ public class BlockRangeBroadcaster {
 
   private boolean isValid(final BlockRangeUpdateMessage message) {
     return message.getLatestBlockNumber() >= message.getEarliestBlockNumber();
+  }
+
+  /**
+   * Computes the per-block difficulty rate using a rolling 10K-block window.
+   *
+   * <p>Returns null only when genesis has not been imported (ourTD == 0 at block 0).
+   */
+  @VisibleForTesting
+  BigInteger powScalingRate(final Difficulty headTD, final long headNumber) {
+    if (headNumber == 0) {
+      // Genesis is valid PoW data — use genesis difficulty as the rate
+      return blockchain
+          .getBlockHeader(0L)
+          .map(h -> h.getDifficulty().getAsBigInteger())
+          .orElse(null);
+    }
+    if (headNumber < POW_SCALING_WINDOW) {
+      // Insufficient history — all-available mean (single era, no contamination)
+      return headTD.getAsBigInteger().divide(BigInteger.valueOf(headNumber));
+    }
+    // Full rolling window: (headTD - windowTD) / 10_000
+    return blockchain
+        .getBlockHeader(headNumber - POW_SCALING_WINDOW)
+        .flatMap(wh -> blockchain.getTotalDifficultyByHash(wh.getHash()))
+        .map(
+            windowTD ->
+                headTD
+                    .getAsBigInteger()
+                    .subtract(windowTD.getAsBigInteger())
+                    .divide(BigInteger.valueOf(POW_SCALING_WINDOW)))
+        .orElseGet(() -> blockchain.getChainHeadHeader().getDifficulty().getAsBigInteger());
   }
 
   /**

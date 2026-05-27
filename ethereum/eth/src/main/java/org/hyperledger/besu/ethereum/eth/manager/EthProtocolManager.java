@@ -484,37 +484,29 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
               peerTD = byNumber.get();
               tdSource = "CANONICAL_NUMBER";
             } else {
-              // Tier 3: marginal-rate estimate — fallback for peers ahead of our chain head.
-              // Uses current block difficulty as the per-block rate for the gap, not the
-              // historical average (ourTD/ourBestNum). For ETC, genesis-era low difficulty
-              // drags the historical avg to ~582 TH/block vs current-era 2000–4300 TH/block.
-              // 9999/10000 guarantees a slight underestimate (< 0.01%) so we never assign
-              // a peer higher priority than their real ETH68 TD would warrant.
+              // Tier 3: rolling 10K-block window average — regime-aware estimate.
+              // Avoids pre-merge era contamination (all-time avg flaw) and point-in-time
+              // hashrate spikes (headDiff flaw). Window transitions naturally as we sync.
               final Difficulty ourTD = blockchain.getChainHead().getTotalDifficulty();
               final long ourBestNum = blockchain.getChainHeadBlockNumber();
-              if (ourBestNum > 0 && !ourTD.equals(Difficulty.ZERO)) {
-                final BigInteger ourCurrentDiff =
-                    blockchain.getChainHeadHeader().getDifficulty().getAsBigInteger();
-                final BigInteger gap =
-                    BigInteger.valueOf(Math.max(0L, peerLatestBlock - ourBestNum));
-                peerTD =
-                    Difficulty.of(
-                        ourTD
-                            .getAsBigInteger()
-                            .add(
-                                ourCurrentDiff
-                                    .multiply(gap)
-                                    .multiply(BigInteger.valueOf(9999L))
-                                    .divide(BigInteger.valueOf(10000L))));
+              if (!ourTD.equals(Difficulty.ZERO)) {
+                final BigInteger rate = powScalingRate(blockchain, ourTD, ourBestNum);
+                if (rate != null) {
+                  final BigInteger gap =
+                      BigInteger.valueOf(Math.max(0L, peerLatestBlock - ourBestNum));
+                  peerTD = Difficulty.of(ourTD.getAsBigInteger().add(rate.multiply(gap)));
+                } else {
+                  peerTD = Difficulty.ZERO;
+                }
               } else {
                 peerTD = Difficulty.ZERO;
               }
-              tdSource = "PROPORTIONAL_SCALING";
+              tdSource = "POW_SCALING";
             }
           }
           if (!peerTD.equals(Difficulty.ZERO)) {
             peer.chainState().statusReceived(status.bestHash(), peerTD);
-            ("PROPORTIONAL_SCALING".equals(tdSource) ? LOG.atInfo() : LOG.atDebug())
+            ("POW_SCALING".equals(tdSource) ? LOG.atInfo() : LOG.atDebug())
                 .setMessage(
                     "ETH69 PoW TD resolved - totalDifficulty={} latestBlock={} source={} peer={}")
                 .addArgument(peerTD)
@@ -562,5 +554,25 @@ public class EthProtocolManager implements ProtocolManager, MinedBlockObserver {
                 new StatusMessage.BlockRange(
                     earliestBlockNumber, blockchain.getChainHeadBlockNumber()))
         .orElseGet(() -> new StatusMessage.BlockRange(0, 0));
+  }
+
+  private static BigInteger powScalingRate(
+      final Blockchain chain, final Difficulty headTD, final long headNumber) {
+    if (headNumber == 0) {
+      return chain.getBlockHeader(0L).map(h -> h.getDifficulty().getAsBigInteger()).orElse(null);
+    }
+    if (headNumber < BlockRangeBroadcaster.POW_SCALING_WINDOW) {
+      return headTD.getAsBigInteger().divide(BigInteger.valueOf(headNumber));
+    }
+    return chain
+        .getBlockHeader(headNumber - BlockRangeBroadcaster.POW_SCALING_WINDOW)
+        .flatMap(wh -> chain.getTotalDifficultyByHash(wh.getHash()))
+        .map(
+            windowTD ->
+                headTD
+                    .getAsBigInteger()
+                    .subtract(windowTD.getAsBigInteger())
+                    .divide(BigInteger.valueOf(BlockRangeBroadcaster.POW_SCALING_WINDOW)))
+        .orElseGet(() -> chain.getChainHeadHeader().getDifficulty().getAsBigInteger());
   }
 }
