@@ -45,10 +45,7 @@ public interface EpochCalculator {
       if (block < ecip1099FBlock) {
         return Long.divideUnsigned(block, EthHash.EPOCH_LENGTH);
       }
-      long preTransitionEpochs = Long.divideUnsigned(ecip1099FBlock, EthHash.EPOCH_LENGTH);
-      long blocksAfterTransition = block - ecip1099FBlock;
-      return preTransitionEpochs
-          + Long.divideUnsigned(blocksAfterTransition, EthHash.EPOCH_LENGTH * 2);
+      return Long.divideUnsigned(block, EthHash.EPOCH_LENGTH * 2);
     }
 
     @Override
@@ -56,9 +53,7 @@ public interface EpochCalculator {
       if (block < ecip1099FBlock) {
         return cacheEpoch(block) * EthHash.EPOCH_LENGTH + 1;
       }
-      long epochsSinceTransition =
-          Long.divideUnsigned(block - ecip1099FBlock, EthHash.EPOCH_LENGTH * 2);
-      return ecip1099FBlock + epochsSinceTransition * EthHash.EPOCH_LENGTH * 2 + 1;
+      return cacheEpoch(block) * (EthHash.EPOCH_LENGTH * 2) + 1;
     }
   }
 }
