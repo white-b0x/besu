@@ -459,7 +459,9 @@ public class ClassicProtocolSpecs {
             (gasCalculator, jdCacheConfig) ->
                 ClassicEVMs.olympia(
                     gasCalculator, chainId.orElse(BigInteger.ZERO), evmConfiguration))
-        // ECIP-1111: EIP-1559 London fee market (no blobs)
+        // ECIP-1111: EIP-1559 London fee market (no blobs) with 1 gwei baseFee floor per ECIP-1111.
+        // Floor prevents baseFee from decaying to zero under ETC's ~0.5% block utilization,
+        // which would eliminate ECIP-1112 treasury revenue. Matches Ronin Network's 1 gwei floor.
         .feeMarketBuilder(
             MainnetProtocolSpecs.createFeeMarket(
                 olympiaBlockNumber,
@@ -468,7 +470,10 @@ public class ClassicProtocolSpecs {
                 false,
                 miningConfiguration.getMinTransactionGasPrice(),
                 (blobSchedule) ->
-                    FeeMarket.london(olympiaBlockNumber, genesisConfigOptions.getBaseFeePerGas())))
+                    FeeMarket.londonWithFloor(
+                        olympiaBlockNumber,
+                        genesisConfigOptions.getBaseFeePerGas(),
+                        Wei.of(1_000_000_000L))))
         // ECIP-1111: EIP-1559 elastic block gas limit + EIP-7825: 30M per-TX gas cap
         .gasLimitCalculatorBuilder(
             (feeMarket, gasCalculator, blobSchedule) ->

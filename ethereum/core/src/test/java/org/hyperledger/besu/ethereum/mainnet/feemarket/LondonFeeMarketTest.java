@@ -71,4 +71,25 @@ public class LondonFeeMarketTest {
     final BaseFeeMarket londonFeeMarket = FeeMarket.london(0, Optional.of(Wei.ZERO));
     assertThat(londonFeeMarket.satisfiesFloorTxFee(transaction)).isTrue();
   }
+
+  @Test
+  public void baseFeeMinValueFloorClampsTinyBaseFee() {
+    // ETC ECIP-1111: baseFee with 1 gwei floor — parent with 1 wei baseFee and 0 gas used
+    // should produce InitialBaseFee (1 gwei), not 0.
+    final Wei minValue = Wei.of(1_000_000_000L); // 1 gwei
+    final BaseFeeMarket etcFeeMarket = FeeMarket.londonWithFloor(0, Optional.empty(), minValue);
+    final long targetGasUsed = 15_000_000L;
+    final Wei result = etcFeeMarket.computeBaseFee(1L, Wei.of(1L), 0L, targetGasUsed);
+    assertThat(result).isGreaterThanOrEqualTo(minValue);
+    assertThat(result).isEqualTo(minValue);
+  }
+
+  @Test
+  public void baseFeeWithoutFloorCanDecayToZero() {
+    // ETH mainnet: no baseFeeMinValue configured — baseFee CAN decay toward 0.
+    final BaseFeeMarket ethFeeMarket = FeeMarket.london(0);
+    final long targetGasUsed = 15_000_000L;
+    final Wei result = ethFeeMarket.computeBaseFee(1L, Wei.of(1L), 0L, targetGasUsed);
+    assertThat(result).isEqualTo(Wei.ZERO);
+  }
 }

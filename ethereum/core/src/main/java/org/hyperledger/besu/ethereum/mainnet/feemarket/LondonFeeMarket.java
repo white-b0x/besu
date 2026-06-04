@@ -38,20 +38,39 @@ public class LondonFeeMarket implements BaseFeeMarket {
   private final long londonForkBlockNumber;
   private final TransactionPriceCalculator txPriceCalculator;
   private final Wei baseFeeFloor;
+  // Chain-configured minimum baseFee per ECIP-1111 (1 gwei for ETC/Mordor; empty for ETH).
+  private final Optional<Wei> baseFeeMinValue;
 
   public LondonFeeMarket(
       final long londonForkBlockNumber, final Optional<Wei> baseFeePerGasOverride) {
-    this(TransactionPriceCalculator.eip1559(), londonForkBlockNumber, baseFeePerGasOverride);
+    this(
+        TransactionPriceCalculator.eip1559(),
+        londonForkBlockNumber,
+        baseFeePerGasOverride,
+        Optional.empty());
+  }
+
+  public LondonFeeMarket(
+      final long londonForkBlockNumber,
+      final Optional<Wei> baseFeePerGasOverride,
+      final Optional<Wei> baseFeeMinValue) {
+    this(
+        TransactionPriceCalculator.eip1559(),
+        londonForkBlockNumber,
+        baseFeePerGasOverride,
+        baseFeeMinValue);
   }
 
   LondonFeeMarket(
       final TransactionPriceCalculator txPriceCalculator,
       final long londonForkBlockNumber,
-      final Optional<Wei> baseFeePerGasOverride) {
+      final Optional<Wei> baseFeePerGasOverride,
+      final Optional<Wei> baseFeeMinValue) {
     this.txPriceCalculator = txPriceCalculator;
     this.londonForkBlockNumber = londonForkBlockNumber;
     this.baseFeeInitialValue = baseFeePerGasOverride.orElse(DEFAULT_BASEFEE_INITIAL_VALUE);
     this.baseFeeFloor = baseFeeInitialValue.isZero() ? Wei.ZERO : DEFAULT_BASEFEE_FLOOR;
+    this.baseFeeMinValue = baseFeeMinValue;
   }
 
   @Override
@@ -114,6 +133,12 @@ public class LondonFeeMarket implements BaseFeeMarket {
       // feeDelta=0, making baseFee stuck at 1 indefinitely on empty blocks.
       feeDelta = UInt256s.max(feeDelta, Wei.ONE);
       baseFee = parentBaseFee.greaterThan(feeDelta) ? parentBaseFee.subtract(feeDelta) : Wei.ZERO;
+      // Apply chain-configured baseFee floor per ECIP-1111.
+      // ETC Mainnet/Mordor: 1 gwei floor prevents treasury revenue decaying to zero.
+      // ETH mainnet: baseFeeMinValue is empty, no floor applied.
+      if (baseFeeMinValue.isPresent() && baseFee.compareTo(baseFeeMinValue.get()) < 0) {
+        baseFee = baseFeeMinValue.get();
+      }
     }
     LOG.trace(
         "block #{} parentBaseFee: {} parentGasUsed: {} parentGasTarget: {} baseFee: {}",

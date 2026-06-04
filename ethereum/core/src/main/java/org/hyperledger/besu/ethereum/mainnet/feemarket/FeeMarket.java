@@ -102,6 +102,23 @@ public interface FeeMarket {
   }
 
   /**
+   * Creates a London fee market with a chain-configured minimum baseFee floor per ECIP-1111. Use
+   * for ETC Mainnet and Mordor Testnet where baseFee must not decay below a minimum value.
+   *
+   * @param londonForkBlockNumber the block number at which the London fork activates.
+   * @param baseFeePerGasOverride an optional override for the initial base fee per gas.
+   * @param baseFeeMinValue the minimum baseFee (e.g. Wei.of(1_000_000_000L) = 1 gwei for ETC).
+   * @return a {@link BaseFeeMarket} instance with the minimum baseFee floor applied.
+   */
+  static BaseFeeMarket londonWithFloor(
+      final long londonForkBlockNumber,
+      final Optional<Wei> baseFeePerGasOverride,
+      final Wei baseFeeMinValue) {
+    return new LondonFeeMarket(
+        londonForkBlockNumber, baseFeePerGasOverride, Optional.of(baseFeeMinValue));
+  }
+
+  /**
    * Creates a Blob fee market with default Cancun blob schedule parameters.
    *
    * @param londonForkBlockNumber the block number at which the London fork activates.
