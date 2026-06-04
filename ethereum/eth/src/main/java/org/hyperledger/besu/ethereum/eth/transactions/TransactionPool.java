@@ -421,7 +421,8 @@ public class TransactionPool implements BlockAddedObserver {
     final FeeMarket feeMarket =
         protocolSchedule.getByBlockHeader(chainHeadBlockHeader).getFeeMarket();
     final TransactionInvalidReason priceInvalidReason =
-        validatePrice(transaction, isLocal, hasPriority, feeMarket);
+        validatePrice(
+            transaction, isLocal, hasPriority, feeMarket, chainHeadBlockHeader.getBaseFee());
     if (priceInvalidReason != null) {
       return ValidationResultAndAccount.invalid(priceInvalidReason);
     }
@@ -502,7 +503,8 @@ public class TransactionPool implements BlockAddedObserver {
       final Transaction transaction,
       final boolean isLocal,
       final boolean hasPriority,
-      final FeeMarket feeMarket) {
+      final FeeMarket feeMarket,
+      final Optional<Wei> maybeBaseFee) {
 
     if (isLocal) {
       if (!configuration.getTxFeeCap().isZero()
@@ -514,6 +516,20 @@ public class TransactionPool implements BlockAddedObserver {
       // allow priority transactions to be below minGas as long as the gas price is above the
       // configured floor
       if (!feeMarket.satisfiesFloorTxFee(transaction)) {
+        return TransactionInvalidReason.GAS_PRICE_TOO_LOW;
+      }
+    } else if (maybeBaseFee.isPresent()) {
+      // ECIP-1122: effective tip check — use min(maxPriorityFee, maxFee - baseFee) rather than
+      // raw maxFeePerGas. Closes the gap where maxFee = baseFee and tip = 0 passes the raw check
+      // but can never be mined (causing permanent nonce-queue deadlock for the sender).
+      final Wei effectiveTip = transaction.getEffectivePriorityFeePerGas(maybeBaseFee);
+      if (effectiveTip.lessThan(configuration.getMinGasPrice())) {
+        LOG.atTrace()
+            .setMessage("Discard transaction {} below min effective tip {} (baseFee {})")
+            .addArgument(transaction::toTraceLog)
+            .addArgument(effectiveTip)
+            .addArgument(maybeBaseFee.get())
+            .log();
         return TransactionInvalidReason.GAS_PRICE_TOO_LOW;
       }
     } else {
