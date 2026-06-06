@@ -19,6 +19,8 @@ import org.hyperledger.besu.nat.core.NatMethodDetector;
 import org.hyperledger.besu.nat.core.domain.NatPortMapping;
 import org.hyperledger.besu.nat.core.domain.NatServiceType;
 import org.hyperledger.besu.nat.core.domain.NetworkProtocol;
+import org.hyperledger.besu.nat.http.HttpProbeIpDetector;
+import org.hyperledger.besu.nat.stun.StunIpDetector;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -144,6 +146,7 @@ public class NatService {
    *     `isNatExternalIpUsageEnabled` is false
    */
   public String queryExternalIPAddress(final String fallbackValue) {
+    // 1. UPnP — only when a NAT manager (e.g. jupnp) is active
     if (isNatEnvironment()) {
       try {
         final NatManager natManager = getNatManager().orElseThrow();
@@ -155,14 +158,38 @@ public class NatService {
                     .queryExternalIPAddress()
                     .get(NatManager.TIMEOUT_SECONDS, TimeUnit.SECONDS))
             .orElseThrow();
-
       } catch (Exception e) {
-        LOG.debug("Caught exception while trying to query NAT external IP address (ignoring)", e);
-        LOG.warn(
-            "Unable to query NAT external IP address. Using the fallback value : {} ",
-            fallbackValue);
+        LOG.debug("UPnP NAT IP detection failed, falling back to STUN cascade: {}", e.getMessage());
       }
     }
+
+    // 2. STUN (RFC 5389) — mirrors go-ethereum's --nat=stun strategy
+    try {
+      final Optional<String> stunResult = new StunIpDetector().detectAdvertisedIp();
+      if (stunResult.isPresent()) {
+        LOG.info("External IP detected via STUN: {}", stunResult.get());
+        return stunResult.get();
+      }
+    } catch (Exception e) {
+      LOG.debug("STUN external IP detection failed: {}", e.getMessage());
+    }
+
+    // 3. HTTP probe — mirrors Nethermind's IP detection strategy
+    try {
+      final Optional<String> httpResult = new HttpProbeIpDetector().detectAdvertisedIp();
+      if (httpResult.isPresent()) {
+        LOG.info("External IP detected via HTTP probe: {}", httpResult.get());
+        return httpResult.get();
+      }
+    } catch (Exception e) {
+      LOG.debug("HTTP probe external IP detection failed: {}", e.getMessage());
+    }
+
+    // 4. All methods exhausted — return the configured fallback
+    LOG.warn(
+        "Unable to determine external IP address via UPnP, STUN, or HTTP probe. "
+            + "Using the fallback value: {}",
+        fallbackValue);
     return fallbackValue;
   }
 
