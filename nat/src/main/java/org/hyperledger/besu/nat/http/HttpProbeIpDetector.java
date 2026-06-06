@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,7 +76,7 @@ public class HttpProbeIpDetector implements IpDetector {
       }
 
       try (final BufferedReader reader =
-          new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+          new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
         final String line = reader.readLine();
         if (line == null || line.isBlank()) {
           return Optional.empty();

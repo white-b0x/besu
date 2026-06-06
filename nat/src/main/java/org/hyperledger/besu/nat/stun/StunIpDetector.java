@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Optional;
 
+import com.google.common.base.Splitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,9 +49,9 @@ public class StunIpDetector implements IpDetector {
   @Override
   public Optional<String> detectAdvertisedIp() throws Exception {
     for (final String server : STUN_SERVERS) {
-      final String[] parts = server.split(":");
-      final String host = parts[0];
-      final int port = Integer.parseInt(parts[1]);
+      final List<String> parts = Splitter.on(':').limit(2).splitToList(server);
+      final String host = parts.get(0);
+      final int port = Integer.parseInt(parts.get(1));
       try {
         final Optional<String> result = stunProbe(host, port);
         if (result.isPresent()) {
