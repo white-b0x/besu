@@ -47,6 +47,7 @@ import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.AncestryValid
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.BaseFeeMarketBlockHeaderGasPriceValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.CalculatedDifficultyValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.ExtraDataMaxLengthValidationRule;
+import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.EtcGasLimitWarnRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.GasLimitRangeAndDeltaValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.GasUsageValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.ProofOfWorkValidationRule;
@@ -544,10 +545,12 @@ public class ClassicProtocolSpecs {
         // Base fee market header validator with ECIP-1099 epoch calculator
         .blockHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
-                createClassicBaseFeeMarketValidator((BaseFeeMarket) feeMarket, ecip1099FBlock))
+                createClassicBaseFeeMarketValidator(
+                    (BaseFeeMarket) feeMarket, ecip1099FBlock, olympiaBlockNumber))
         .ommerHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
-                createClassicBaseFeeMarketOmmerValidator((BaseFeeMarket) feeMarket, ecip1099FBlock))
+                createClassicBaseFeeMarketOmmerValidator(
+                    (BaseFeeMarket) feeMarket, ecip1099FBlock, olympiaBlockNumber))
         .blockBodyValidatorBuilder(BaseFeeBlockBodyValidator::new)
         // EIP-2935: block hash history system contract + EIP-7709 block hash lookup
         .preExecutionProcessor(new OlympiaPreExecutionProcessor())
@@ -557,7 +560,7 @@ public class ClassicProtocolSpecs {
   }
 
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketValidator(
-      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock, final long olympiaBlockNumber) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
@@ -566,6 +569,8 @@ public class ClassicProtocolSpecs {
             // ETC Olympia does not apply the London 2× gas-limit doubling at fork activation.
             // Pass Optional.empty() so the validator uses plain parent gasLimit for delta bounds.
             new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
+        // ECIP-1122 SHOULD: warn (not reject) when a peer mines below the network gas floor.
+        .addRule(new EtcGasLimitWarnRule(olympiaBlockNumber))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
@@ -582,7 +587,7 @@ public class ClassicProtocolSpecs {
   }
 
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketOmmerValidator(
-      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock, final long olympiaBlockNumber) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
@@ -590,6 +595,8 @@ public class ClassicProtocolSpecs {
         .addRule(
             // ETC Olympia: same as block validator — plain parent gasLimit, no 2× doubling.
             new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
+        // ECIP-1122 SHOULD: warn (not reject) when a peer mines below the network gas floor.
+        .addRule(new EtcGasLimitWarnRule(olympiaBlockNumber))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
