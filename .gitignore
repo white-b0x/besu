@@ -22,6 +22,11 @@ local/
 *.pem
 *.key
 credentials.json
+# Blockchain & crypto key storage
+keystore/
+*.keystore
+wallet.json
+mnemonic.txt
 
 # Planning & internal docs
 SESSION_NOTES.md
