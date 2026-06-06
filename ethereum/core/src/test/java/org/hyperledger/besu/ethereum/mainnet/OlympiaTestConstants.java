@@ -46,7 +46,7 @@ public final class OlympiaTestConstants {
 
   /** ECIP-1112 treasury vault address (demo v0.2, ACTIVE in clients). */
   public static final Address TREASURY =
-      Address.fromHexString("0x035b2e3c189B772e52F4C3DA6c45c84A3bB871bf");
+      Address.fromHexString("0x60d0A7394f9Cd5C469f9F5Ec4F9C803F5294d79b");
 
   private OlympiaTestConstants() {}
 }
