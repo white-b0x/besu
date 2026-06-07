@@ -83,7 +83,7 @@ public interface DefaultCommandValues {
   String MANDATORY_PORT_FORMAT_HELP = "<PORT>";
 
   /** The constant DEFAULT_NAT_METHOD. */
-  NatMethod DEFAULT_NAT_METHOD = NatMethod.AUTO;
+  NatMethod DEFAULT_NAT_METHOD = NatMethod.UPNP;
 
   /** The constant DEFAULT_JWT_ALGORITHM. */
   JwtAlgorithm DEFAULT_JWT_ALGORITHM = JwtAlgorithm.RS256;
