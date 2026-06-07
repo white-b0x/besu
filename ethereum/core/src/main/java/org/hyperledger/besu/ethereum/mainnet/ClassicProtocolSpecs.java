@@ -545,11 +545,11 @@ public class ClassicProtocolSpecs {
         .blockHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
                 createClassicBaseFeeMarketValidator(
-                    (BaseFeeMarket) feeMarket, ecip1099FBlock, olympiaBlockNumber))
+                    (BaseFeeMarket) feeMarket, ecip1099FBlock))
         .ommerHeaderValidatorBuilder(
             (feeMarket, gasCalculator, gasLimitCalculator) ->
                 createClassicBaseFeeMarketOmmerValidator(
-                    (BaseFeeMarket) feeMarket, ecip1099FBlock, olympiaBlockNumber))
+                    (BaseFeeMarket) feeMarket, ecip1099FBlock))
         .blockBodyValidatorBuilder(BaseFeeBlockBodyValidator::new)
         // EIP-2935: block hash history system contract + EIP-7709 block hash lookup
         .preExecutionProcessor(new OlympiaPreExecutionProcessor())
@@ -559,7 +559,7 @@ public class ClassicProtocolSpecs {
   }
 
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketValidator(
-      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock, final long olympiaBlockNumber) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
@@ -584,7 +584,7 @@ public class ClassicProtocolSpecs {
   }
 
   private static BlockHeaderValidator.Builder createClassicBaseFeeMarketOmmerValidator(
-      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock, final long olympiaBlockNumber) {
+      final BaseFeeMarket baseFeeMarket, final long ecip1099FBlock) {
     return new BlockHeaderValidator.Builder()
         .addRule(CalculatedDifficultyValidationRule::new)
         .addRule(new AncestryValidationRule())
