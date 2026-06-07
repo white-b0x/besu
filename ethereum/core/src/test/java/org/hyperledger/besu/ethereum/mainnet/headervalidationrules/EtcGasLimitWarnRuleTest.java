@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Test;
  * <p>The rule emits a WARN log when a peer block's gasLimit is below the scheduled gas limit target
  * for its epoch, but ALWAYS returns {@code true} — the block is accepted regardless.
  *
- * <p>Targets: 8,000,000 (Spiral, pre-Olympia) and 60,000,000 (Olympia+).
- * Mirrors core-geth's {@code ForkGasTarget} check in {@code VerifyEIP1559Header}.
+ * <p>Targets: 8,000,000 (Spiral, pre-Olympia) and 60,000,000 (Olympia+). Mirrors core-geth's {@code
+ * ForkGasTarget} check in {@code VerifyEIP1559Header}.
  */
 public class EtcGasLimitWarnRuleTest {
 
@@ -45,7 +45,8 @@ public class EtcGasLimitWarnRuleTest {
   @Test
   public void validatesAnyBlockRegardlessOfGasLimit() {
     // Block at Olympia with gas limit of 1 — still accepted (warning only).
-    BlockHeader header = new BlockHeaderTestFixture().number(OLYMPIA_BLOCK).gasLimit(1L).buildHeader();
+    BlockHeader header =
+        new BlockHeaderTestFixture().number(OLYMPIA_BLOCK).gasLimit(1L).buildHeader();
     assertThat(rule.validate(header, DUMMY_PARENT)).isTrue();
   }
 
@@ -62,10 +63,7 @@ public class EtcGasLimitWarnRuleTest {
   @Test
   public void returnsTrue_preOlympia_gasLimitAtSpiralTarget() {
     BlockHeader header =
-        new BlockHeaderTestFixture()
-            .number(SPIRAL_BLOCK)
-            .gasLimit(SPIRAL_GAS_LIMIT)
-            .buildHeader();
+        new BlockHeaderTestFixture().number(SPIRAL_BLOCK).gasLimit(SPIRAL_GAS_LIMIT).buildHeader();
     assertThat(rule.validate(header, DUMMY_PARENT)).isTrue();
   }
 
@@ -106,14 +104,16 @@ public class EtcGasLimitWarnRuleTest {
     // Block just before Olympia uses the 8M Spiral target.
     // gasLimit=8M is at-or-above Spiral target → no warning (returns true, same as below-target).
     // The test asserts the rule resolves the target based on block number, not a fixed threshold.
-    BlockHeader below = new BlockHeaderTestFixture()
-        .number(OLYMPIA_BLOCK - 1)
-        .gasLimit(SPIRAL_GAS_LIMIT - 1)
-        .buildHeader();
-    BlockHeader atTarget = new BlockHeaderTestFixture()
-        .number(OLYMPIA_BLOCK - 1)
-        .gasLimit(SPIRAL_GAS_LIMIT)
-        .buildHeader();
+    BlockHeader below =
+        new BlockHeaderTestFixture()
+            .number(OLYMPIA_BLOCK - 1)
+            .gasLimit(SPIRAL_GAS_LIMIT - 1)
+            .buildHeader();
+    BlockHeader atTarget =
+        new BlockHeaderTestFixture()
+            .number(OLYMPIA_BLOCK - 1)
+            .gasLimit(SPIRAL_GAS_LIMIT)
+            .buildHeader();
 
     // Both are accepted (warning only rule).
     assertThat(rule.validate(below, DUMMY_PARENT)).isTrue();
@@ -123,10 +123,8 @@ public class EtcGasLimitWarnRuleTest {
   @Test
   public void atOlympia_uses60MTarget() {
     // gasLimit=8M < 60M → would trigger a warning for Olympia blocks.
-    BlockHeader header = new BlockHeaderTestFixture()
-        .number(OLYMPIA_BLOCK)
-        .gasLimit(SPIRAL_GAS_LIMIT)
-        .buildHeader();
+    BlockHeader header =
+        new BlockHeaderTestFixture().number(OLYMPIA_BLOCK).gasLimit(SPIRAL_GAS_LIMIT).buildHeader();
     assertThat(rule.validate(header, DUMMY_PARENT)).isTrue();
   }
 

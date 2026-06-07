@@ -40,7 +40,11 @@ public class HttpProbeIpDetector implements IpDetector {
 
   // Public IP probe endpoints — same services used by Nethermind
   private static final List<String> PROBE_URLS =
-      List.of("https://icanhazip.com", "https://checkip.amazonaws.com", "https://api4.ipify.org");
+      List.of(
+          "https://icanhazip.com",
+          "https://checkip.amazonaws.com",
+          "https://api4.ipify.org",
+          "https://4.ident.me");
 
   private static final int TIMEOUT_MS = 3000;
 
@@ -76,7 +80,8 @@ public class HttpProbeIpDetector implements IpDetector {
       }
 
       try (final BufferedReader reader =
-          new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+          new BufferedReader(
+              new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
         final String line = reader.readLine();
         if (line == null || line.isBlank()) {
           return Optional.empty();
