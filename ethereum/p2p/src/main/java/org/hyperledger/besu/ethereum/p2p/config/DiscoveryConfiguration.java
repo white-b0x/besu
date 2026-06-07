@@ -34,7 +34,7 @@ public class DiscoveryConfiguration {
   private int bucketSize = 16;
   private List<EnodeURLImpl> enodeBootnodes = new ArrayList<>();
   private List<EthereumNodeRecord> enrBootnodes = new ArrayList<>();
-  private String dnsDiscoveryURL;
+  private List<String> dnsDiscoveryURLs = new ArrayList<>();
   private boolean discoveryV5Enabled = false;
   private boolean filterOnEnrForkId = NetworkingConfiguration.DEFAULT_FILTER_ON_ENR_FORK_ID;
   private boolean includeBootnodesOnPeerRefresh = true;
@@ -144,12 +144,12 @@ public class DiscoveryConfiguration {
     return this;
   }
 
-  public String getDNSDiscoveryURL() {
-    return dnsDiscoveryURL;
+  public List<String> getDNSDiscoveryURLs() {
+    return dnsDiscoveryURLs;
   }
 
-  public DiscoveryConfiguration setDnsDiscoveryURL(final String dnsDiscoveryURL) {
-    this.dnsDiscoveryURL = dnsDiscoveryURL;
+  public DiscoveryConfiguration setDnsDiscoveryURLs(final List<String> dnsDiscoveryURLs) {
+    this.dnsDiscoveryURLs = dnsDiscoveryURLs != null ? dnsDiscoveryURLs : List.of();
     return this;
   }
 
@@ -256,7 +256,7 @@ public class DiscoveryConfiguration {
         && Objects.equals(advertisedHost, that.advertisedHost)
         && Objects.equals(enodeBootnodes, that.enodeBootnodes)
         && Objects.equals(enrBootnodes, that.enrBootnodes)
-        && Objects.equals(dnsDiscoveryURL, that.dnsDiscoveryURL)
+        && Objects.equals(dnsDiscoveryURLs, that.dnsDiscoveryURLs)
         && Objects.equals(bindHostIpv6, that.bindHostIpv6)
         && Objects.equals(advertisedHostIpv6, that.advertisedHostIpv6)
         && preferIpv6Outbound == that.preferIpv6Outbound;
@@ -272,7 +272,7 @@ public class DiscoveryConfiguration {
         bucketSize,
         enodeBootnodes,
         enrBootnodes,
-        dnsDiscoveryURL,
+        dnsDiscoveryURLs,
         bindHostIpv6,
         bindPortIpv6,
         advertisedHostIpv6,
@@ -298,8 +298,8 @@ public class DiscoveryConfiguration {
         + enodeBootnodes
         + ", enrBootnodes="
         + enrBootnodes
-        + ", dnsDiscoveryURL="
-        + dnsDiscoveryURL
+        + ", dnsDiscoveryURLs="
+        + dnsDiscoveryURLs
         + ", isDiscoveryV5Enabled="
         + discoveryV5Enabled
         + ", isFilterOnEnrForkIdEnabled="

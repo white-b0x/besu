@@ -15,7 +15,10 @@
     "ecbp1100DeactivateBlock": 10400000,
     "ethash": {},
     "discovery": {
-      "dns": "enrtree://AJE62Q4DUX4QMMXEHCSSCSC65TDHZYSMONSD64P3WULVLSF6MRQ3K@all.mordor.blockd.info",
+      "dns": [
+        "enrtree://AJE62Q4DUX4QMMXEHCSSCSC65TDHZYSMONSD64P3WULVLSF6MRQ3K@all.mordor.etcdisco.net",
+        "enrtree://AJE62Q4DUX4QMMXEHCSSCSC65TDHZYSMONSD64P3WULVLSF6MRQ3K@all.mordor.blockd.info"
+      ],
       "bootnodes": [
         "enode://4539a067ae1f6a7ffac509603ba37baf772fc832880ddc67c53f292b6199fb048267f0311c820bc90bfd39ec663bc6b5256bdf787ec38425c82bde6bc2bcfe3c@24.199.107.164:30303"
       ]

@@ -55,6 +55,7 @@ import org.hyperledger.besu.plugin.services.MetricsSystem;
 
 import java.net.InetAddress;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -145,8 +146,8 @@ public class DefaultP2PNetwork implements P2PNetwork {
   private final CountDownLatch shutdownLatch = new CountDownLatch(2);
   private final Duration shutdownTimeout = Duration.ofSeconds(15);
   private final Vertx vertx;
-  private final AtomicReference<Optional<DNSDaemon>> dnsDaemonRef =
-      new AtomicReference<>(Optional.empty());
+  private final AtomicReference<List<DNSDaemon>> dnsDaemonsRef =
+      new AtomicReference<>(List.of());
 
   /**
    * Creates a peer networking service for production purposes.
@@ -211,39 +212,39 @@ public class DefaultP2PNetwork implements P2PNetwork {
 
     final String address = config.discoveryConfiguration().getAdvertisedHost();
 
-    Optional.ofNullable(config.discoveryConfiguration().getDNSDiscoveryURL())
-        .ifPresent(
-            disco -> {
-              // These lists are updated every 12h
-              // We retrieve the list every 10 minutes (600000 msec)
-              LOG.info("Starting DNS discovery with URL {}", disco);
-              config
-                  .dnsDiscoveryServerOverride()
-                  .ifPresent(
-                      dnsServer ->
-                          LOG.info(
-                              "Starting DNS discovery with DNS Server override {}", dnsServer));
+    final List<String> dnsDiscoveryURLs = config.discoveryConfiguration().getDNSDiscoveryURLs();
+    if (!dnsDiscoveryURLs.isEmpty()) {
+      // These lists are updated every 12h; we retrieve every 10 minutes (600000 msec).
+      config
+          .dnsDiscoveryServerOverride()
+          .ifPresent(
+              dnsServer ->
+                  LOG.info("Starting DNS discovery with DNS Server override {}", dnsServer));
 
-              final DNSDaemon dnsDaemon =
-                  new DNSDaemon(
-                      disco,
-                      createDaemonListener(),
-                      0L,
-                      1000L, // start after 1 second
-                      600000L,
-                      config.dnsDiscoveryServerOverride().orElse(null));
+      final List<DNSDaemon> startedDaemons = new ArrayList<>();
+      for (final String disco : dnsDiscoveryURLs) {
+        LOG.info("Starting DNS discovery with URL {}", disco);
+        final DNSDaemon dnsDaemon =
+            new DNSDaemon(
+                disco,
+                createDaemonListener(),
+                0L,
+                1000L, // start after 1 second
+                600000L,
+                config.dnsDiscoveryServerOverride().orElse(null));
 
-              // Use Java 21 virtual thread to deploy verticle
-              final DeploymentOptions options =
-                  new DeploymentOptions()
-                      .setThreadingModel(ThreadingModel.VIRTUAL_THREAD)
-                      .setInstances(1)
-                      .setWorkerPoolSize(1);
+        // Use Java 21 virtual thread to deploy verticle
+        final DeploymentOptions options =
+            new DeploymentOptions()
+                .setThreadingModel(ThreadingModel.VIRTUAL_THREAD)
+                .setInstances(1)
+                .setWorkerPoolSize(1);
 
-              final Future<String> deployId = vertx.deployVerticle(dnsDaemon, options);
-              deployId.toCompletionStage().toCompletableFuture().join();
-              dnsDaemonRef.set(Optional.of(dnsDaemon));
-            });
+        vertx.deployVerticle(dnsDaemon, options).toCompletionStage().toCompletableFuture().join();
+        startedDaemons.add(dnsDaemon);
+      }
+      dnsDaemonsRef.set(List.copyOf(startedDaemons));
+    }
 
     final int listeningPort;
     try {
@@ -308,9 +309,9 @@ public class DefaultP2PNetwork implements P2PNetwork {
       return;
     }
 
-    // since dnsDaemon is a vertx verticle, vertx.close will undeploy it.
+    // since dnsDaemons are vertx verticles, vertx.close will undeploy them.
     // However, we can safely call stop as well.
-    dnsDaemonRef.get().ifPresent(DNSDaemon::stop);
+    dnsDaemonsRef.get().forEach(DNSDaemon::stop);
 
     peerConnectionScheduler.shutdownNow();
     peerDiscoveryAgent.stop().whenComplete((res, err) -> shutdownLatch.countDown());
@@ -372,7 +373,12 @@ public class DefaultP2PNetwork implements P2PNetwork {
 
   @VisibleForTesting
   Optional<DNSDaemon> getDnsDaemon() {
-    return dnsDaemonRef.get();
+    final List<DNSDaemon> daemons = dnsDaemonsRef.get();
+    return daemons.isEmpty() ? Optional.empty() : Optional.of(daemons.get(0));
+  }
+
+  List<DNSDaemon> getDnsDaemons() {
+    return dnsDaemonsRef.get();
   }
 
   @VisibleForTesting

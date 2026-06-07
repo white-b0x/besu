@@ -35,14 +35,14 @@ import java.util.Objects;
  * @param networkId Network Id
  * @param enodeBootNodes Enode Boot Nodes
  * @param enrBootNodes ENR Boot Nodes
- * @param dnsDiscoveryUrl DNS Discovery URL
+ * @param dnsDiscoveryUrls DNS Discovery URLs, in priority order (primary first)
  */
 public record EthNetworkConfig(
     GenesisConfig genesisConfig,
     BigInteger networkId,
     List<EnodeURLImpl> enodeBootNodes,
     List<EthereumNodeRecord> enrBootNodes,
-    String dnsDiscoveryUrl) {
+    List<String> dnsDiscoveryUrls) {
 
   /**
    * Validate parameters on new record creation
@@ -51,7 +51,7 @@ public record EthNetworkConfig(
    * @param networkId the network id
    * @param enodeBootNodes the Enode boot nodes
    * @param enrBootNodes the ENR boot nodes
-   * @param dnsDiscoveryUrl the dns discovery url
+   * @param dnsDiscoveryUrls the dns discovery urls
    */
   @SuppressWarnings(
       "MethodInputParametersMustBeFinal") // needed since record constructors are not yet supported
@@ -59,6 +59,7 @@ public record EthNetworkConfig(
     Objects.requireNonNull(genesisConfig);
     Objects.requireNonNull(enodeBootNodes);
     Objects.requireNonNull(enrBootNodes);
+    dnsDiscoveryUrls = dnsDiscoveryUrls != null ? dnsDiscoveryUrls : List.of();
   }
 
   /**
@@ -90,7 +91,7 @@ public record EthNetworkConfig(
         networkDefinition.getNetworkId(),
         enodeBootNodes,
         enrBootNodes,
-        discoveryOptions.getDiscoveryDnsUrl().orElse(null));
+        discoveryOptions.getDiscoveryDnsUrls());
   }
 
   private static URL jsonConfigSource(final String resourceName) {
@@ -115,7 +116,7 @@ public record EthNetworkConfig(
   /** The type Builder. */
   public static class Builder {
 
-    private String dnsDiscoveryUrl;
+    private List<String> dnsDiscoveryUrls;
     private GenesisConfig genesisConfig;
     private BigInteger networkId;
     private List<EnodeURLImpl> enodeBootNodes;
@@ -131,7 +132,7 @@ public record EthNetworkConfig(
       this.networkId = ethNetworkConfig.networkId;
       this.enodeBootNodes = ethNetworkConfig.enodeBootNodes;
       this.enrBootNodes = ethNetworkConfig.enrBootNodes;
-      this.dnsDiscoveryUrl = ethNetworkConfig.dnsDiscoveryUrl;
+      this.dnsDiscoveryUrls = ethNetworkConfig.dnsDiscoveryUrls;
     }
 
     /**
@@ -179,13 +180,13 @@ public record EthNetworkConfig(
     }
 
     /**
-     * Sets dns discovery url.
+     * Sets dns discovery urls.
      *
-     * @param dnsDiscoveryUrl the dns discovery url
+     * @param dnsDiscoveryUrls the dns discovery urls, in priority order
      * @return this builder
      */
-    public Builder setDnsDiscoveryUrl(final String dnsDiscoveryUrl) {
-      this.dnsDiscoveryUrl = dnsDiscoveryUrl;
+    public Builder setDnsDiscoveryUrls(final List<String> dnsDiscoveryUrls) {
+      this.dnsDiscoveryUrls = dnsDiscoveryUrls;
       return this;
     }
 
@@ -196,7 +197,7 @@ public record EthNetworkConfig(
      */
     public EthNetworkConfig build() {
       return new EthNetworkConfig(
-          genesisConfig, networkId, enodeBootNodes, enrBootNodes, dnsDiscoveryUrl);
+          genesisConfig, networkId, enodeBootNodes, enrBootNodes, dnsDiscoveryUrls);
     }
   }
 }

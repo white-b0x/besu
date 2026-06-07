@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -95,11 +96,43 @@ public class DiscoveryOptions {
   }
 
   /**
-   * Gets discovery dns url.
+   * Gets all discovery DNS URLs. Supports both a single string and a JSON array in the genesis
+   * config {@code "dns"} field. Returns an empty list when the field is absent.
    *
-   * @return the discovery dns url
+   * @return immutable list of DNS discovery URLs, in priority order
+   */
+  public List<String> getDiscoveryDnsUrls() {
+    final JsonNode dnsNode = discoveryConfigRoot.get(DNS_KEY);
+    if (dnsNode == null || dnsNode.isNull()) {
+      return List.of();
+    }
+    if (dnsNode.isArray()) {
+      final List<String> urls = new ArrayList<>();
+      dnsNode
+          .elements()
+          .forEachRemaining(
+              node -> {
+                if (!node.isTextual()) {
+                  throw new IllegalArgumentException(
+                      DNS_KEY + " array element is not a string: " + node);
+                }
+                urls.add(node.asText());
+              });
+      return List.copyOf(urls);
+    }
+    if (dnsNode.isTextual()) {
+      return List.of(dnsNode.asText());
+    }
+    throw new IllegalArgumentException(DNS_KEY + " must be a string or array of strings");
+  }
+
+  /**
+   * Gets the primary discovery DNS URL (first entry), for backward compatibility.
+   *
+   * @return the first discovery dns url, or empty if none configured
    */
   public Optional<String> getDiscoveryDnsUrl() {
-    return JsonUtil.getString(discoveryConfigRoot, DNS_KEY);
+    final List<String> urls = getDiscoveryDnsUrls();
+    return urls.isEmpty() ? Optional.empty() : Optional.of(urls.get(0));
   }
 }

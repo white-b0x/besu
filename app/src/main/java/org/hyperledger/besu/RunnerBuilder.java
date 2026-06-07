@@ -685,7 +685,7 @@ public class RunnerBuilder {
           "Bootnodes enode={}, enr={}",
           discoveryConfiguration.getEnodeBootnodes(),
           discoveryConfiguration.getEnrBootnodes());
-      discoveryConfiguration.setDnsDiscoveryURL(ethNetworkConfig.dnsDiscoveryUrl());
+      discoveryConfiguration.setDnsDiscoveryURLs(ethNetworkConfig.dnsDiscoveryUrls());
       discoveryConfiguration.setDiscoveryV5Enabled(
           networkingConfiguration.discoveryConfiguration().isDiscoveryV5Enabled());
       discoveryConfiguration.setFilterOnEnrForkId(

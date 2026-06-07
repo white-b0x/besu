@@ -2482,7 +2482,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         builder.setEnodeBootNodes(new ArrayList<>());
         builder.setEnrBootNodes(new ArrayList<>());
       }
-      builder.setDnsDiscoveryUrl(null);
+      builder.setDnsDiscoveryUrls(List.of());
     }
 
     builder.setGenesisConfig(genesisConfigSupplier.get());
@@ -2496,11 +2496,13 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       builder.setNetworkId(new BigInteger(chainId));
     }
     if (p2PDiscoveryOptions.discoveryDnsUrl != null) {
-      builder.setDnsDiscoveryUrl(p2PDiscoveryOptions.discoveryDnsUrl);
+      builder.setDnsDiscoveryUrls(List.of(p2PDiscoveryOptions.discoveryDnsUrl));
     } else {
-      final Optional<String> discoveryDnsUrlFromGenesis =
-          genesisConfigOptionsSupplier.get().getDiscoveryOptions().getDiscoveryDnsUrl();
-      discoveryDnsUrlFromGenesis.ifPresent(builder::setDnsDiscoveryUrl);
+      final List<String> discoveryDnsUrlsFromGenesis =
+          genesisConfigOptionsSupplier.get().getDiscoveryOptions().getDiscoveryDnsUrls();
+      if (!discoveryDnsUrlsFromGenesis.isEmpty()) {
+        builder.setDnsDiscoveryUrls(discoveryDnsUrlsFromGenesis);
+      }
     }
 
     // Resolve bootnodes: CLI --bootnodes overrides genesis defaults.
