@@ -46,7 +46,6 @@ import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.AncestryValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.BaseFeeMarketBlockHeaderGasPriceValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.CalculatedDifficultyValidationRule;
-import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.EtcGasLimitWarnRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.ExtraDataMaxLengthValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.GasLimitRangeAndDeltaValidationRule;
 import org.hyperledger.besu.ethereum.mainnet.headervalidationrules.GasUsageValidationRule;
@@ -569,8 +568,6 @@ public class ClassicProtocolSpecs {
             // ETC Olympia does not apply the London 2× gas-limit doubling at fork activation.
             // Pass Optional.empty() so the validator uses plain parent gasLimit for delta bounds.
             new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
-        // ECIP-1122 SHOULD: warn (not reject) when a peer mines below the network gas floor.
-        .addRule(new EtcGasLimitWarnRule(olympiaBlockNumber))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
@@ -595,8 +592,6 @@ public class ClassicProtocolSpecs {
         .addRule(
             // ETC Olympia: same as block validator — plain parent gasLimit, no 2× doubling.
             new GasLimitRangeAndDeltaValidationRule(5000, Long.MAX_VALUE, Optional.empty()))
-        // ECIP-1122 SHOULD: warn (not reject) when a peer mines below the network gas floor.
-        .addRule(new EtcGasLimitWarnRule(olympiaBlockNumber))
         .addRule(
             new TimestampMoreRecentThanParent(
                 MainnetBlockHeaderValidator.MINIMUM_SECONDS_SINCE_PARENT))
