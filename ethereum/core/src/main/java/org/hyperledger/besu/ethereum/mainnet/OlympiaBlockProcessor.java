@@ -69,32 +69,32 @@ public class OlympiaBlockProcessor extends ClassicBlockProcessor {
       final BlockHeader header,
       final List<BlockHeader> ommers,
       final boolean skipZeroBlockRewards) {
-    // Apply era-based miner rewards (ECIP-1017)
-    if (!super.rewardCoinbase(worldState, header, ommers, skipZeroBlockRewards)) {
-      return false;
+    // ECIP-1111: credit baseFee × gasUsed to treasury BEFORE miner/ommer rewards (spec ordering).
+    final Optional<Wei> baseFee = header.getBaseFee();
+    if (baseFee.isPresent()) {
+      if (treasuryAddress.isEmpty()) {
+        LOG.error(
+            "Olympia active at block {} but treasury address is not configured"
+                + " — baseFee revenue will not be credited",
+            header.getNumber());
+      } else if (header.getGasUsed() > 0) {
+        final Wei credit = baseFee.get().multiply(header.getGasUsed());
+        if (credit.greaterThan(Wei.ZERO)) {
+          final WorldUpdater updater = worldState.updater();
+          final MutableAccount treasury = updater.getOrCreate(treasuryAddress.get());
+          treasury.incrementBalance(credit);
+          updater.commit();
+          LOG.trace(
+              "Olympia treasury credit: {} wei to {} (baseFee={}, gasUsed={})",
+              credit,
+              treasuryAddress.get(),
+              baseFee.get(),
+              header.getGasUsed());
+        }
+      }
     }
 
-    // Credit baseFee × gasUsed to treasury (ECIP-1111)
-    treasuryAddress.ifPresent(
-        address -> {
-          final Optional<Wei> baseFee = header.getBaseFee();
-          if (baseFee.isPresent() && header.getGasUsed() > 0) {
-            final Wei credit = baseFee.get().multiply(header.getGasUsed());
-            if (credit.greaterThan(Wei.ZERO)) {
-              final WorldUpdater updater = worldState.updater();
-              final MutableAccount treasury = updater.getOrCreate(address);
-              treasury.incrementBalance(credit);
-              updater.commit();
-              LOG.trace(
-                  "Olympia treasury credit: {} wei to {} (baseFee={}, gasUsed={})",
-                  credit,
-                  address,
-                  baseFee.get(),
-                  header.getGasUsed());
-            }
-          }
-        });
-
-    return true;
+    // Apply era-based miner and ommer rewards (ECIP-1017) after treasury credit.
+    return super.rewardCoinbase(worldState, header, ommers, skipZeroBlockRewards);
   }
 }
