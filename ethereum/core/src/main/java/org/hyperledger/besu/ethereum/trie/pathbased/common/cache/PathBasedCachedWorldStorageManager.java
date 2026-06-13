@@ -234,18 +234,12 @@ public abstract class PathBasedCachedWorldStorageManager implements StorageSubsc
         .flatMap(
             header ->
                 Optional.ofNullable(cachedWorldStatesByHash.get(header.getBlockHash()))
-                    .map(PathBasedCachedWorldView::getWorldStateStorage)
-                    .or(
-                        () -> {
-                          // if not cached already, maybe fetch and cache this worldstate
-                          var maybeWorldState =
-                              archive
-                                  .getWorldState(withBlockHeaderAndNoUpdateNodeHead(header))
-                                  .map(BonsaiWorldState.class::cast);
-                          maybeWorldState.ifPresent(
-                              ws -> addCachedLayer(header, header.getStateRoot(), ws));
-                          return maybeWorldState.map(BonsaiWorldState::getWorldStateStorage);
-                        }));
+                    .map(PathBasedCachedWorldView::getWorldStateStorage));
+    // Note: we intentionally do NOT reconstruct via archive.getWorldState() here.
+    // Trie-log reconstruction on large chains (ETC 24M+ blocks) can take 20+ minutes,
+    // blocking all snap serving (this method is synchronized). Snap clients that request
+    // a root not in the live layer cache will receive an empty response and can re-select
+    // a more recent pivot block. Fast failure is correct snap protocol behavior.
   }
 
   @Override
