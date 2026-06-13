@@ -57,6 +57,7 @@
         <Logger name="org.hyperledger.besu.ethereum.trie.pathbased.bonsai.storage.BonsaiSnapshotWorldStateKeyValueStorage">
             <StackTraceMatchFilter stackContains="BlockTransactionSelector" messageEquals="Attempting to access closed worldstate" onMatch="DENY" onMismatch="NEUTRAL"/>
         </Logger>
+        <Logger name="org.hyperledger.besu.ethereum.eth.manager.snap" level="DEBUG" additivity="true"/>
         <Root level="${sys:root.log.level}">
             <AppenderRef ref="Router" />
         </Root>
